@@ -19,11 +19,11 @@
 # Change the file extension to match the format (.xml for XML, etc...)
 #
 ###
-title: "TODO - Your title"
-abbrev: "TODO - Abbreviation"
+title: "Globally Relevant HTTPS RRs"
+abbrev: "Globally Relevant HTTPS RRs"
 category: info
 
-docname: draft-todo-yourname-protocol-latest
+docname: draft-kinnear-globally-relevant
 submissiontype: IETF  # also: "independent", "editorial", "IAB", or "IRTF"
 number:
 date:
