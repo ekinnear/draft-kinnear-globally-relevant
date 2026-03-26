@@ -145,6 +145,22 @@ though they SHOULD prefer fresh address resolution if readily available and MAY
 choose to re-resolve in parallel with connection attempts to the cached address
 hints.
 
+## Address Synthesis Across Networks
+
+On IPv6-only networks that provide NAT64 connectivity {{?RFC6146}}, clients can
+synthesize IPv6 addresses from IPv4 addresses using the network's NAT64 prefix,
+discovered via Router Advertisements {{?RFC8781}} or DNS-based mechanisms
+{{?RFC7050}}. The "globally-relevant" flag asserts that the addresses in
+`ipv4hint` and `ipv6hint` are globally valid as published by the authoritative
+server; it does not assert the validity of any locally-synthesized addresses
+derived from those hints.
+
+If a client has synthesized an IPv6 address from an `ipv4hint` value using one
+network's NAT64 prefix, it MUST NOT reuse that synthesized address after moving
+to a different network. Instead, the client MUST re-synthesize using the NAT64
+prefix of the new network, if available. The original `ipv4hint` value itself
+remains valid and can be used as input to the new synthesis.
+
 # Server Behavior
 
 An authoritative DNS server SHOULD set the "globally-relevant" SvcParamKey
