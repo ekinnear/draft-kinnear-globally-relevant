@@ -194,6 +194,13 @@ Resolvers MUST NOT add or remove the "globally-relevant" flag. The assertion
 of global relevance is made by the authoritative server for the zone, and
 resolvers are not in a position to make or override this determination.
 
+Some resolvers modify DNS responses for operational purposes, such as DNS64
+synthesis {{?RFC6147}} or content filtering. When a resolver synthesizes or
+rewrites a response, it is effectively acting as the authoritative source for
+that modified answer. Such synthesized answers SHOULD NOT carry
+the "globally-relevant" flag, as the resolver cannot assert that its
+locally-modified response is valid on other networks.
+
 
 # Security Considerations
 
