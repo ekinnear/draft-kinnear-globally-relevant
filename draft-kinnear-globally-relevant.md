@@ -74,12 +74,33 @@ records are treated as network-scoped as they are today.
 
 {::boilerplate bcp14-tagged}
 
-The following term is used in this document:
+The following terms are used in this document:
 
 Network attachment change:
 : A change in the client's network connectivity, such as switching from one
 Wi-Fi network to another, transitioning between Wi-Fi and cellular
 connectivity, or connecting or disconnecting a VPN.
+
+Authoritative server:
+: A DNS server that is authoritative for a zone and generates responses
+for names in that zone, as defined in {{?RFC9499}}.
+
+Recursive resolver:
+: A DNS resolver that resolves queries on behalf of a client by
+iteratively querying authoritative servers, as defined in {{?RFC9499}}.
+
+Origin server:
+: The server that terminates the client's transport connection to the
+service identified by an SVCB or HTTPS resource record. For HTTP-based
+services, this is the origin server as defined in
+{{Section 3.6 of ?RFC9110}}. The `ipv4hint` and `ipv6hint` parameters of
+an SVCB or HTTPS record are hints for reaching this server.
+
+Operator:
+: In this document, an entity that runs both the authoritative server for
+a service's zone and the origin server for that service. Where a single
+operator holds both roles, it can correlate observations between DNS
+queries and connections.
 
 
 # The "globally-relevant" SvcParamKey
