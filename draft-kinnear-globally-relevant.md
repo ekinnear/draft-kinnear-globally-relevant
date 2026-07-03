@@ -197,7 +197,7 @@ locally-modified response is valid on other networks.
 
 # Security Considerations
 
-## Incorrect Flagging
+## Incorrect Flagging {#incorrect-flagging}
 
 If an authoritative server incorrectly sets the "globally-relevant" flag on a
 record whose parameters vary by network, clients may use inappropriate service
@@ -406,7 +406,7 @@ mitigations to limit the cross-network tracking risk:
 
 * Apply existing privacy protections for address hints uniformly to
   globally-relevant records, including the requirement in
-  (#security-considerations) that cached address hints not be reused across
+  {{incorrect-flagging}} that cached address hints not be reused across
   network changes for connections that are not authenticated by a security
   protocol such as TLS.
 
