@@ -195,9 +195,9 @@ Servers that use address hints to direct clients to network-specific
 endpoints (e.g., CDN edge nodes selected by resolver location) MUST NOT set
 the "globally-relevant" flag unless those address hints are valid globally.
 
-Operators SHOULD carefully audit their DNS configurations before deploying
-the "globally-relevant" flag, as incorrect use could cause clients to use
-inappropriate service parameters after network changes.
+Operators are strongly suggested to carefully audit their DNS configurations
+before deploying the "globally-relevant" flag, as incorrect use could cause
+clients to use inappropriate service parameters after network changes.
 
 # Resolver Behavior
 
@@ -218,7 +218,7 @@ locally-modified response is valid on other networks.
 
 # Security Considerations
 
-## Incorrect Flagging {#incorrect-flagging}
+## Incorrect Use {#incorrect-use}
 
 If an authoritative server incorrectly sets the "globally-relevant" flag on a
 record whose parameters vary by network, clients may use inappropriate service
@@ -252,7 +252,7 @@ SNI-based firewalling. The "globally-relevant" flag does not change this.
 Where DNSSEC validation is employed, the "globally-relevant" flag does not
 change validation requirements. Cached records that were validated remain
 usable as long as the DNSSEC signatures have not expired. Clients performing
-DNSSEC validation SHOULD NOT reuse a cached record if the DNSSEC signature has
+DNSSEC validation MUST NOT reuse a cached record if the DNSSEC signature has
 expired, even if the record's TTL has not.
 
 
@@ -261,14 +261,14 @@ expired, even if the record's TTL has not.
 An on-path attacker that can modify DNS responses could strip the
 "globally-relevant" flag from records, causing clients to re-resolve
 unnecessarily after network changes. This degrades performance to current
-behavior but does not otherwise affect security posture.
+behavior but does not otherwise affect security.
 
 An on-path attacker could also add the "globally-relevant" flag to a record that
 the authoritative server did not mark as globally relevant. The impact of this
 is limited: the client may reuse a record that would otherwise have been
 re-resolved, which is only problematic if the record was network-specific, and
 the resulting connection will fail to authenticate the host. DNSSEC also
-protects against both of these modification attacks when deployed.
+protects against both of these modification attacks, when deployed.
 
 
 # Privacy Considerations
@@ -276,146 +276,138 @@ protects against both of these modification attacks when deployed.
 ## Cross-Network Client Tracking via Unique Addresses
 
 The "globally-relevant" flag permits a client to use cached `ipv6hint` (or
-`ipv4hint`) addresses across network attachment changes. An authoritative
-server that wishes to track a specific client across networks could exploit
-this by returning a per-client unique address, for example by encoding a
-client identifier in some of the bits of an IPv6 address, and observing
-the resulting connections from multiple networks. Because the client reuses
-the cached address after a network change, the server observes the same
-unique address connecting from a different network and links the two
-networks to a single client identity.
+`ipv4hint`) addresses across network attachment changes. An operator that
+wishes to track a specific client across networks could exploit this by
+having its authoritative server return a per-client unique address, for
+example by encoding a client identifier in some of the bits of an IPv6
+address, and then observing the resulting connections at its origin server
+from multiple networks. Because the client reuses the cached address after
+a network change, the operator observes the same unique address connecting
+to its origin server from a different network and links a single client
+identity to both networks.
 
 Without "globally-relevant", the client would re-resolve on the new
 network, and the authoritative server would issue a fresh unique address
-to that resolution. The connections originating from each network would
-then carry different addresses, and the authoritative server would have no
-DNS-derived signal linking them as the same client: each resolution arrives
-through a different recursive resolver and conveys no carry-over client
-identity. The cross-network linkage exists in this design precisely because
-the unique address itself acts as a stable handle that the client carries
+for that resolution. The operator would have no DNS-derived signal linking
+the resolutions as the same client, and the connections arriving at the
+origin server would carry different addresses, offering no linkage there
+either. The cross-network linkage exists in this design only because the
+unique address itself acts as a stable identifier that the client carries
 across networks instead of being replaced at each resolution.
 
 {{Section 7.1 of ?RFC9076}} recognizes a related class of attack in which
 a user is "re-identified via DNS queries... regardless of the location from
 which the user makes those queries", based on query-pattern correlation
-across time. The cross-network linkage described here arrives at the same
-end through a different mechanism: rather than correlating recurring query
-patterns observed by a passive watcher, an authoritative server seeds a
-chosen identifier into the response itself and recognizes it whenever the
-client connects to the resulting address, with no further DNS interaction
-required.
+across time. The cross-network linkage described in this section achieves
+the same result through a different mechanism: rather than correlating
+recurring query patterns observed by a passive watcher, an operator actively
+seeds a chosen identifier into the response returned by its authoritative
+server and recognizes it when the client connects to the resulting address
+at the origin server.
 
-## Comparison to Existing Tracking Vectors
+### Comparison to Existing Tracking Vectors
 
-### Recursive Resolvers and Anonymity Sets
+#### Recursive Resolvers and Anonymity Sets
 
 An authoritative server that returns a per-client unique answer today
 already observes that answer being requested by a specific recursive
 resolver. For clients using a shared public or ISP recursive resolver, the
-authoritative server sees only the recursive's address, and the client is
-part of an anonymity set composed of that recursive's other users (see
-{{Section 6.2 of ?RFC9076}}). The set's size depends on the deployment
-(see {{Section 6.1.1 of ?RFC6973}} for definitions of anonymity sets).
+authoritative server sees the recursive resolver's address, and the
+client is part of an anonymity set composed of that recursive resolver's
+other users (see {{Section 6.2 of ?RFC9076}}). The set's size depends on
+the deployment (see {{Section 3.3 of ?RFC6973}} for definitions of
+anonymity sets).
 
 This "hiding" by the recursive resolver is incomplete where the EDNS Client
 Subnet (ECS) option {{?RFC7871}} is used. {{Section 6.2 of ?RFC9076}} notes
 that with ECS, the authoritative name server "sees the original IP address
-(or prefix, depending on the setup)" rather than only the recursive's
-address. An authoritative server returning a per-client unique answer can
-therefore correlate that answer with the client's subnet on each fresh
-resolution, providing some cross-network correlation today even without
-the "globally-relevant" flag. The flag broadens this in two directions: it
-eliminates the dependence on ECS, and it removes the requirement for a
-fresh resolution at all.
+(or prefix, depending on the setup)" rather than only the recursive
+resolver's address. An authoritative server returning a per-client unique
+answer can therefore correlate that answer with the client's subnet on
+each fresh resolution, providing some cross-network correlation even
+without the "globally-relevant" flag.
 
 Without the "globally-relevant" flag, the authoritative server's view is
-partitioned by recursive resolver: it sees one anonymity set per recursive,
-and a single client moving between networks that use different recursives
-appears as independent observations from disjoint sets. Caching at each
-recursive further limits how often the authoritative server is queried at
-all.
+partitioned by recursive resolver: it sees one anonymity set per recursive
+resolver, and a single client moving between networks that use different
+recursive resolvers appears as independent observations from disjoint sets.
+Caching at each recursive resolver further limits how often the
+authoritative server is queried at all.
 
-The "globally-relevant" flag changes this in two ways. First, when a client
-moves to a new network and reuses a cached unique address, it bypasses the
-new network's recursive resolver entirely for the cached name; the
-authoritative server learns of the move directly from the connection,
-without the new recursive ever forwarding a query. Second, this allows the
-authoritative server to join observations that would otherwise have been
-separated by recursive boundaries, effectively intersecting the
-per-recursive anonymity sets and shrinking the set in which any one client
-is hidden. {{Section 5.2.1 of ?RFC6973}} characterizes this kind of
-correlation across observations as a privacy harm independent of any single
-observation's identifying power.
+The "globally-relevant" flag allows the operator to join observations that
+would otherwise have been separated by recursive resolver boundaries,
+effectively intersecting the per-recursive-resolver anonymity sets and
+shrinking the set in which any one client is hidden (see
+{{Section 5.2.1 of ?RFC6973}}).
 
-### AliasMode and CNAME Targets
+#### AliasMode and CNAME Targets
 
-A similar tracking primitive is already available without this draft.
-Authoritative servers can return per-client unique CNAME targets, SVCB
-AliasMode targets {{Section 2.4.2 of RFC9460}}, or other names that
-function as client identifiers. However, the "globally-relevant" attack
-described here is harder to mount than its name-based analogues, for a
-practical reason: a unique IPv4 or IPv6 address used as an `ipv4hint` or
-`ipv6hint` value must actually be routable to the operator's service from
-every network the client uses, whereas a unique CNAME or AliasMode target
-is merely a label that the client subsequently resolves through its local
-recursive resolver, ultimately pointing at a shared address that the
-operator already serves.
+A similar tracking primitive is already available without the
+"globally-relevant" flag. Authoritative servers can return per-client
+unique CNAME targets, SVCB AliasMode targets ({{Section 2.4.2 of RFC9460}}),
+or other names that function as client identifiers.
+
+However, the "globally-relevant" attack described here is harder to mount than
+these similar attacks, since a unique IPv4 or IPv6 address used as an
+`ipv4hint` or `ipv6hint` value must actually be routable to the operator's
+origin server from every network the client uses, whereas a unique CNAME or
+AliasMode target is merely a label that the client subsequently resolves
+through its local recursive resolver, ultimately pointing at a shared address
+that the operator already serves.
 
 The label-based approach therefore costs the operator only a DNS record per
 identifier, while the address-based approach costs an IP address per
 identifier and the routing infrastructure to receive traffic on each.
-Operators with large unique-IPv6 ranges and the willingness to terminate
-arbitrary addresses can perform this attack regardless. For the broader
-population of operators, the deployment cost is a meaningful barrier.
 
-The label-based primitive, however, is not bounded. An arbitrarily long
-CNAME (or DNAME-induced CNAME) chain reintroduces the same tracking
-capability, because the final A or AAAA record in the chain can encode a
-per-client identifier in either its name or its address, and clients
-caching across networks would carry the chain's terminal answer with them.
-The DNS specifications {{?RFC1034}} {{?RFC6672}} do not normatively limit
-CNAME chain length; {{Section 2.3 of ?RFC6672}} explicitly notes that
-"fairly lengthy valid chains" may occur. Implementations bound chain
-following for resource reasons, but the limit is not interoperable.
-Treating CNAME chains as out-of-scope for this draft is appropriate, but
-implementations of "globally-relevant" SHOULD apply the same cross-network
-caching policy to all elements of an alias chain consistently, reusing
-either all records in the chain after a network change or none, to avoid
-creating partial-reuse states that have privacy properties differing from
+An arbitrarily long CNAME (or DNAME-induced CNAME) chain reintroduces the same
+tracking capability, because the final A or AAAA record in the chain can encode
+a per-client identifier in either its name or its address, and clients caching
+across networks would carry the chain's terminal answer with them.{
+{?RFC1034}} and {{?RFC6672}} do not normatively limit CNAME chain length, and {
+{Section 2.2 of ?RFC6672}} explicitly notes that
+"fairly lengthy valid chains" may occur. SVCB itself requires clients and
+ recursive resolvers to cap AliasMode chains at some implementation-chosen
+ depth ({{Section 2.4.2 of RFC9460}}), but that cap applies only to SVCB
+ aliases, not to CNAME redirections. Implementations can bound CNAME chain
+ following for resource reasons, but the limit is not interoperable.
+
+Defending against attacks using CNAME chains is out-of-scope for this document,
+but implementations of "globally-relevant" SHOULD generally apply the same
+cross-network caching policy to all elements of an alias chain consistently,
+reusing either all records in the chain after a network change or none, to
+avoid creating partial-reuse states that have privacy properties differing from
 either endpoint of the chain.
 
-### Encrypted DNS and ODoH
+#### Encrypted DNS and ODoH
 
-Encrypted transports such as DNS-over-TLS {{?RFC7858}}, DNS-over-HTTPS
-{{?RFC8484}}, and Oblivious DNS-over-HTTPS {{?RFC9230}} protect the DNS
-query against on-path observers but do not prevent an authoritative server
-from returning a per-client unique answer. {{Section 5.2 of ?RFC9076}}
-notes that with encrypted transport "some privacy attacks are still
-possible", and {{Section 6.1.4.1 of ?RFC9076}} observes that "use of
-encrypted transports does not reduce the data available in the recursive
-resolver". The same principle applies upstream: encrypted transport does
-nothing to constrain what an authoritative server chooses to put in its
-answers. ODoH in particular hides the
-client's IP address from the recursive resolver (the "Target" in
-{{Section 4 of ?RFC9230}}) and the query contents from the proxy, but its
-threat model treats authoritative-server-as-tracker as out of scope: a
-Target or any downstream authoritative server "could return a DNS answer
-corresponding to an entity it controls and then observe the subsequent
-connection from a Client" {{Section 11 of ?RFC9230}}. The
-"globally-relevant" flag does not change this on a single network. It
-extends the same attack surface across networks, subject to the constraints
-described above.
+Encrypted transports such as DNS-over-TLS {{?RFC7858}}, DNS-over-HTTPS{
+{?RFC8484}}, and Oblivious DNS-over-HTTPS {{?RFC9230}} protect the DNS query
+against on-path observers but do not prevent an authoritative server from
+returning a per-client unique answer. {{Section 6.1.4.1 of ?RFC9076}} notes
+that "use of encrypted transports does not reduce the data available in the
+recursive resolver".
 
-## Client Mitigations
+ODoH in particular hides the client's IP address from the recursive resolver
+(the "Target" in {{Section 4 of ?RFC9230}}) and the query contents from the
+proxy, but its threat model treats the authoritative server returning unique
+records per-client as out of scope. A Target or any downstream authoritative
+server "could return a DNS answer corresponding to an entity it controls and
+then observe the subsequent connection from a Client" (see {{Section 11
+of ?RFC9230}}). The "globally-relevant" flag does not change this on a single
+network, but it does extend the same attack surface across networks, subject to
+the constraints described above.
+
+### Client Mitigations
 
 Clients implementing this specification SHOULD apply the following
 mitigations to limit the cross-network tracking risk:
 
-* Treat `ipv4hint` and `ipv6hint` values with low natural reuse as
-  candidates for re-resolution after a network change, even when the
-  "globally-relevant" flag is present. Examples include addresses outside
-  well-known anycast ranges, addresses that appear unique to a single
-  client, and addresses with high entropy in the host bits.
+* Treat `ipv4hint` and `ipv6hint` values that appear unlikely to be shared
+  with many other clients as candidates for re-resolution after a network
+  change, even when the "globally-relevant" flag is present. Examples
+  include addresses outside well-known anycast ranges, addresses that
+  appear unique to a single client, and addresses with high entropy in
+  the host bits.
 
 * When re-resolving a globally-relevant record on a new network in the
   background (for example, to refresh before TTL expiry), if the new
@@ -427,15 +419,9 @@ mitigations to limit the cross-network tracking risk:
 
 * Apply existing privacy protections for address hints uniformly to
   globally-relevant records, including the requirement in
-  {{incorrect-flagging}} that cached address hints not be reused across
+  {{incorrect-use}} that cached address hints not be reused across
   network changes for connections that are not authenticated by a security
   protocol such as TLS.
-
-The operational practice of long-TTL anycast addressing combined with
-optimistic DNS refresh {{?RFC8767}} already produces
-similar cross-network address reuse for many records today. The mitigations
-above apply equally well in that context and are consistent with current
-operational practice.
 
 
 # IANA Considerations
