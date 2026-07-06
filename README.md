@@ -4,10 +4,10 @@
 
 This is the working area for the individual Internet-Draft, "Globally Relevant HTTPS RRs".
 
-* [Editor's Copy](https://ekinnear.github.io/draft-kinnear-globally-relevant/#go.draft-kinnear-globally-relevant.html)
-* [Datatracker Page](https://datatracker.ietf.org/doc/draft-kinnear-globally-relevant)
-* [Individual Draft](https://datatracker.ietf.org/doc/html/draft-kinnear-globally-relevant)
-* [Compare Editor's Copy to Individual Draft](https://ekinnear.github.io/draft-kinnear-globally-relevant/#go.draft-kinnear-globally-relevant.diff)
+* [Editor's Copy](https://ekinnear.github.io/draft-kinnear-globally-relevant/#go.draft-kinnear-dnsop-globally-relevant.html)
+* [Datatracker Page](https://datatracker.ietf.org/doc/draft-kinnear-dnsop-globally-relevant)
+* [Individual Draft](https://datatracker.ietf.org/doc/html/draft-kinnear-dnsop-globally-relevant)
+* [Compare Editor's Copy to Individual Draft](https://ekinnear.github.io/draft-kinnear-globally-relevant/#go.draft-kinnear-dnsop-globally-relevant.diff)
 
 
 ## Contributing

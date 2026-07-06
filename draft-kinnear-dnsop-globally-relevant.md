@@ -3,7 +3,7 @@ title: "Globally Relevant HTTPS RRs"
 abbrev: "Globally Relevant HTTPS RRs"
 category: std
 
-docname: draft-kinnear-globally-relevant-latest
+docname: draft-kinnear-dnsop-globally-relevant-latest
 submissiontype: IETF
 number:
 date:
@@ -17,7 +17,7 @@ keyword:
  - globally-relevant
 venue:
   github: "ekinnear/draft-kinnear-globally-relevant"
-  latest: "https://ekinnear.github.io/draft-kinnear-globally-relevant/draft-kinnear-globally-relevant.html"
+  latest: "https://ekinnear.github.io/draft-kinnear-globally-relevant/draft-kinnear-dnsop-globally-relevant.html"
 
 author:
  -
