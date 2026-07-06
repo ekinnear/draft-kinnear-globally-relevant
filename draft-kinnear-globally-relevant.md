@@ -362,14 +362,14 @@ identifier and the routing infrastructure to receive traffic on each.
 An arbitrarily long CNAME (or DNAME-induced CNAME) chain reintroduces the same
 tracking capability, because the final A or AAAA record in the chain can encode
 a per-client identifier in either its name or its address, and clients caching
-across networks would carry the chain's terminal answer with them.{
-{?RFC1034}} and {{?RFC6672}} do not normatively limit CNAME chain length, and {
-{Section 2.2 of ?RFC6672}} explicitly notes that
+across networks would carry the chain's terminal answer with them.
+{{?RFC1034}} and {{?RFC6672}} do not normatively limit CNAME chain length, and
+{{Section 2.2 of ?RFC6672}} explicitly notes that
 "fairly lengthy valid chains" may occur. SVCB itself requires clients and
- recursive resolvers to cap AliasMode chains at some implementation-chosen
- depth ({{Section 2.4.2 of RFC9460}}), but that cap applies only to SVCB
- aliases, not to CNAME redirections. Implementations can bound CNAME chain
- following for resource reasons, but the limit is not interoperable.
+recursive resolvers to cap AliasMode chains at some implementation-chosen
+depth ({{Section 2.4.2 of RFC9460}}), but that cap applies only to SVCB
+aliases, not to CNAME redirections. Implementations can bound CNAME chain
+following for resource reasons, but the limit is not interoperable.
 
 Defending against attacks using CNAME chains is out-of-scope for this document,
 but implementations of "globally-relevant" SHOULD generally apply the same
@@ -380,8 +380,8 @@ either endpoint of the chain.
 
 #### Encrypted DNS and ODoH
 
-Encrypted transports such as DNS-over-TLS {{?RFC7858}}, DNS-over-HTTPS{
-{?RFC8484}}, and Oblivious DNS-over-HTTPS {{?RFC9230}} protect the DNS query
+Encrypted transports such as DNS-over-TLS {{?RFC7858}}, DNS-over-HTTPS
+{{?RFC8484}}, and Oblivious DNS-over-HTTPS {{?RFC9230}} protect the DNS query
 against on-path observers but do not prevent an authoritative server from
 returning a per-client unique answer. {{Section 6.1.4.1 of ?RFC9076}} notes
 that "use of encrypted transports does not reduce the data available in the
