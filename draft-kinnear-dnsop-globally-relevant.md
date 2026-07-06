@@ -24,6 +24,14 @@ author:
     fullname: "Eric Kinnear"
     organization: Apple Inc.
     email: "ekinnear@apple.com"
+ -
+    fullname: "Nidhi Jaju"
+    organization: Google
+    email: "nidhijaju@google.com"
+ -
+    fullname: "Ian Swett"
+    organization: Google
+    email: "ianswett@google.com"
 
 --- abstract
 
