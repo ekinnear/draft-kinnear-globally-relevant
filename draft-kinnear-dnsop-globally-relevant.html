@@ -1,0 +1,1896 @@
+<!DOCTYPE html>
+<html lang="en" class="Internet-Draft">
+<head>
+<meta charset="utf-8">
+<meta content="Common,Latin" name="scripts">
+<meta content="initial-scale=1.0" name="viewport">
+<title>Globally Relevant HTTPS RRs</title>
+<meta content="Eric Kinnear" name="author">
+<meta content="Nidhi Jaju" name="author">
+<meta content="Ian Swett" name="author">
+<meta content="
+       DNS answers for SVCB and HTTPS resource records are typically treated as
+scoped to the network on which they were obtained. This requires clients to
+re-resolve DNS when changing network attachments, adding latency to connection
+establishment. This document defines a new SvcParamKey, &quot;globally-relevant&quot;,
+for use in SVCB and HTTPS DNS resource records as defined in  . When
+present, this boolean flag indicates that the service binding parameters in
+the record are valid regardless of the client's network attachment point.
+Clients that observe this flag can reuse cached SVCB and HTTPS records across
+network changes, subject to normal TTL expiry. 
+    " name="description">
+<meta content="xml2rfc 3.32.0" name="generator">
+<meta content="DNS" name="keyword">
+<meta content="SVCB" name="keyword">
+<meta content="HTTPS" name="keyword">
+<meta content="SvcParamKey" name="keyword">
+<meta content="globally-relevant" name="keyword">
+<meta content="draft-kinnear-dnsop-globally-relevant-latest" name="ietf.draft">
+<!-- Generator version information:
+  xml2rfc 3.32.0
+    Python 3.14.3
+    ConfigArgParse 1.7.5
+    google-i18n-address 3.1.1
+    intervaltree 3.2.1
+    Jinja2 3.1.6
+    lxml 6.0.2
+    platformdirs 4.9.4
+    pycountry 26.2.16
+    PyYAML 6.0.3
+    requests 2.32.5
+    wcwidth 0.6.0
+-->
+<link href="draft-kinnear-dnsop-globally-relevant.xml" rel="alternate" type="application/rfc+xml">
+<link href="#copyright" rel="license">
+<style type="text/css">@font-face {
+  font-family: 'Lora';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Lora Italic'), local('Lora-Italic'), url('https://martinthomson.github.io/rfc-css/fonts/lora-italic-cyrillic-ext.woff2') format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Lora Italic'), local('Lora-Italic'), url('https://martinthomson.github.io/rfc-css/fonts/lora-italic-cyrillic-ext.woff2') format('woff2');
+  unicode-range: U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Lora Italic'), local('Lora-Italic'), url('https://martinthomson.github.io/rfc-css/fonts/lora-italic-vietnamese.woff2') format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+1EA0-1EF9, U+20AB;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Lora Italic'), local('Lora-Italic'), url('https://martinthomson.github.io/rfc-css/fonts/lora-italic-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+  font-family: 'Lora';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Lora Italic'), local('Lora-Italic'), url('https://martinthomson.github.io/rfc-css/fonts/lora-italic-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Lora Regular'), local('Lora-Regular'), url('https://martinthomson.github.io/rfc-css/fonts/lora-regular-cyrillic-ext.woff2') format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Lora Regular'), local('Lora-Regular'), url('https://martinthomson.github.io/rfc-css/fonts/lora-regular-cyrillic.woff2') format('woff2');
+  unicode-range: U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Lora Regular'), local('Lora-Regular'), url('https://martinthomson.github.io/rfc-css/fonts/lora-regular-vietnamese.woff2') format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+1EA0-1EF9, U+20AB;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Lora Regular'), local('Lora-Regular'), url('https://martinthomson.github.io/rfc-css/fonts/lora-regular-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Lora Regular'), local('Lora-Regular'), url('https://martinthomson.github.io/rfc-css/fonts/lora-regular-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: local('Lora Bold'), local('Lora-Bold'), url('https://martinthomson.github.io/rfc-css/fonts/lora-bold-cyrillic-ext.woff2') format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: local('Lora Bold'), local('Lora-Bold'), url('https://martinthomson.github.io/rfc-css/fonts/lora-bold-cyrillic.woff2') format('woff2');
+  unicode-range: U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: local('Lora Bold'), local('Lora-Bold'), url('https://martinthomson.github.io/rfc-css/fonts/lora-bold-vietnamese.woff2') format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+1EA0-1EF9, U+20AB;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: local('Lora Bold'), local('Lora-Bold'), url('https://martinthomson.github.io/rfc-css/fonts/lora-bold-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: local('Lora Bold'), local('Lora-Bold'), url('https://martinthomson.github.io/rfc-css/fonts/lora-bold-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Lora';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: local('Lora SemiBold'), local('Lora-SemiBold'), url('https://martinthomson.github.io/rfc-css/fonts/lora-semibold-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'Oxygen Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Oxygen Mono'), local('OxygenMono-Regular'), url('https://martinthomson.github.io/rfc-css/fonts/oxygenmono-regular-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Oxygen Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: local('Oxygen Mono'), local('OxygenMono-Regular'), url('https://martinthomson.github.io/rfc-css/fonts/oxygenmono-regular-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+}
+
+@font-face {
+  font-family: 'Sofia Sans Semi Condensed';
+  font-style: italic;
+  font-weight: 1 1000;
+  src: url('https://martinthomson.github.io/rfc-css/fonts/sofiasanssemicondensed-italic-cyrillic-ext.woff2') format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+@font-face {
+  font-family: 'Sofia Sans Semi Condensed';
+  font-style: italic;
+  font-weight: 1 1000;
+  src: url('https://martinthomson.github.io/rfc-css/fonts/sofiasanssemicondensed-italic-cyrillic.woff2') format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+@font-face {
+  font-family: 'Sofia Sans Semi Condensed';
+  font-style: italic;
+  font-weight: 1 1000;
+  src: url('https://martinthomson.github.io/rfc-css/fonts/sofiasanssemicondensed-italic-greek.woff2') format('woff2');
+  unicode-range: U+0370-0377, U+037A-037F, U+0384-038A, U+038C, U+038E-03A1, U+03A3-03FF;
+}
+@font-face {
+  font-family: 'Sofia Sans Semi Condensed';
+  font-style: italic;
+  font-weight: 1 1000;
+  src: url('https://martinthomson.github.io/rfc-css/fonts/sofiasanssemicondensed-italic-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Sofia Sans Semi Condensed';
+  font-style: italic;
+  font-weight: 1 1000;
+  src: url('https://martinthomson.github.io/rfc-css/fonts/sofiasanssemicondensed-italic-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Sofia Sans Semi Condensed';
+  font-style: normal;
+  font-weight: 1 1000;
+  src: url('https://martinthomson.github.io/rfc-css/fonts/sofiasanssemicondensed-regular-cyrillic-ext.woff2') format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+@font-face {
+  font-family: 'Sofia Sans Semi Condensed';
+  font-style: normal;
+  font-weight: 1 1000;
+  src: url('https://martinthomson.github.io/rfc-css/fonts/sofiasanssemicondensed-regular-cyrillic.woff2') format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+@font-face {
+  font-family: 'Sofia Sans Semi Condensed';
+  font-style: normal;
+  font-weight: 1 1000;
+  src: url('https://martinthomson.github.io/rfc-css/fonts/sofiasanssemicondensed-regular-greek.woff2') format('woff2');
+  unicode-range: U+0370-0377, U+037A-037F, U+0384-038A, U+038C, U+038E-03A1, U+03A3-03FF;
+}
+@font-face {
+  font-family: 'Sofia Sans Semi Condensed';
+  font-style: normal;
+  font-weight: 1 1000;
+  src: url('https://martinthomson.github.io/rfc-css/fonts/sofiasanssemicondensed-regular-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Sofia Sans Semi Condensed';
+  font-style: normal;
+  font-weight: 1 1000;
+  src: url('https://martinthomson.github.io/rfc-css/fonts/sofiasanssemicondensed-regular-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+:root {
+  color-scheme: light dark;
+  --background-color: #fff;
+  --text-color: #222;
+  --title-color: #191919;
+  --link-color: #2a6496;
+  --highlight-color: #f9f9f9;
+  --line-color: #eee;
+  --pilcrow-weak: #ddd;
+  --pilcrow-strong: #bbb;
+  --small-font-size: 14.5px;
+  --font-mono: 'Oxygen Mono', monospace;
+  --font-title: "Sofia Sans Semi Condensed", sans-serif;
+  scrollbar-color: #bbb #eee;
+}
+body {
+  max-width: 600px;
+  margin: 75px auto;
+  padding: 0 5px;
+  color: var(--text-color);
+  background-color: var(--background-color);
+  font: 16px/22px "Lora", serif;
+  scroll-behavior: smooth;
+}
+
+.ears {
+  display: none;
+}
+
+/* headings */
+section {
+  clear: both;
+}
+.section-number {
+  padding-right: 0.5em;
+}
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-title);
+  font-weight: 680;
+  margin: 0.8em 0 0.3em;
+  font-size-adjust: 0.5;
+  color: var(--title-color);
+}
+h1#title {
+  font-size: 32px;
+  line-height: 40px;
+  clear: both;
+}
+h1#title, h1#rfcnum {
+  margin: 1.5em 0 0.2em;
+}
+h1#rfcnum + h1#title {
+  margin: 0.2em 0;
+}
+
+h1, h2, h3 {
+  font-size: 22px;
+  line-height: 27px;
+}
+h4, h5, h6 {
+  font-size: 20px;
+  line-height: 24px;
+}
+
+/* general structure */
+.author {
+  padding-bottom: 0.3em;
+  vertical-align: top;
+}
+#abstract+p {
+  font-size: 18px;
+  line-height: 24px;
+}
+#abstract+p code, #abstract+p samp, #abstract+p tt {
+  font-size: 16px;
+  line-height: 0;
+}
+
+p {
+  padding: 0;
+  margin: 0.5em 0;
+  text-align: left;
+}
+div {
+  margin: 0;
+}
+.alignRight.art-text {
+  background-color: var(--highlight-color);
+  border: 1px solid var(--line-color);
+  border-radius: 3px;
+  padding: 0.5em 1em 0;
+  margin-bottom: 0.5em;
+}
+.alignRight.art-text pre {
+  padding: 0;
+  width: auto;
+}
+.alignRight {
+  margin: 1em 0;
+}
+.alignRight > *:first-child {
+  border: none;
+  margin: 0;
+  float: right;
+  clear: both;
+}
+.alignRight > *:nth-child(2) {
+  clear: both;
+  display: block;
+  border: none;
+}
+svg {
+  display: block;
+}
+/* font-family isn't space-separated, but =~ will have to do */
+svg[font-family~="monospace" i], svg [font-family~="monospace" i] {
+  font-family: var(--font-mono);
+}
+.alignCenter.art-text {
+  background-color: var(--highlight-color);
+  border: 1px solid var(--line-color);
+  border-radius: 3px;
+  padding: 0.5em 1em 0;
+  margin-bottom: 0.5em;
+}
+.alignCenter.art-text pre {
+  padding: 0;
+  width: auto;
+}
+.alignCenter {
+  margin: 1em 0;
+}
+.alignCenter > *:first-child {
+  border: none;
+  /* this isn't optimal, but it's an existence proof.  PrinceXML doesn't
+     support flexbox yet.
+  */
+  display: table;
+  margin: 0 auto;
+}
+
+/* lists */
+ol, ul {
+  padding: 0;
+  margin: 0 0 0.5em 2em;
+  & :is(ol, ul) {
+    margin-left: 1em;
+  }
+}
+li {
+  margin: 0 0 0.25em 0;
+}
+ul.empty, .ulEmpty {
+  list-style-type: none;
+  & li {
+    margin-top: 0.5em;
+  }
+}
+:is(ul, ol).compact, .ulCompact, .olCompact {
+  margin: 0 0 0 2em;
+  & li {
+    margin: 0;
+    & :first-child { margin-top: 0; }
+    & :last-child { margin-bottom: 0; }
+  }
+}
+
+/* definition lists */
+dl {
+  clear: left;
+  --indent: 3ch;
+  /* --indent: attr(indent ch); not supported in any browser, but we can dream */
+  &.olPercent {
+    --indent: 5ch;
+    & > dt {
+      min-width: calc(var(--indent) - 2ch);
+    }
+  }
+  &.olPercent > dt {
+    float: none;
+  }
+
+  dl > dd > & {
+    margin-top: 0.5em;
+    margin-bottom: 0;
+  }
+}
+dl:not(.dlNewline) > dt {
+  float: left;
+  margin-right: 2ch;
+  min-width: 8ch;
+}
+dl > dd {
+  margin-bottom: .8em;
+  margin-left: var(--indent) !important; /* stupid element overrides */
+  min-height: 2ex;
+}
+:is(dl.compact, .dlCompact) > dd {
+  margin-bottom: 0;
+  & > :is(:first-child, .break:first-child + *) {
+    margin-top: 0;
+  }
+  & > :is(:last-child) {
+    margin-bottom: 0;
+  }
+}
+:is(dd, span).break {
+  display: none;
+}
+
+/* links */
+a, a[href].selfRef:hover {
+  text-decoration: none;
+}
+a[href] {
+  color: var(--link-color);
+}
+a[href].selfRef, .iref + a[href].internal {
+  color: var(--text-color);
+}
+a[href]:hover {
+  text-decoration: underline;
+}
+a[href].selfRef:hover {
+  background-color: var(--highlight-color);
+}
+a.xref:is(.cite, .auto), :is(#status-of-memo, #copyright) a {
+  white-space: nowrap;
+}
+
+/* Figures */
+tt, code, pre {
+  background-color: var(--highlight-color);
+  font: 14px/22px var(--font-mono);
+}
+tt, code {
+  /* changing the font for inline elements leads to different ascender
+     and descender heights; as we want to retain baseline alignment,
+     remove leading to avoid altering the final height of lines
+     note: this fails if these blocks take an entire line,
+     a different solution would be great */
+  line-height: 0;
+}
+:is(h1, h2, h3, h4, h5, h6) :is(tt, code) {
+  font-size: 84%;
+}
+pre {
+  border: 1px solid var(--line-color);
+  font-size: 13.5px;
+  line-height: 16px;
+  letter-spacing: -0.2px;
+  margin: 5px;
+  padding: 5px;
+}
+img {
+  max-width: 100%;
+}
+figure {
+  margin: 0.5em 0;
+  padding: 0;
+}
+figure blockquote {
+  margin: 0.8em 0.4em 0.4em;
+}
+figcaption, caption {
+  font-style: italic;
+  margin: 0.5em 1.5em;
+  text-align: left;
+  caption-side: bottom;
+}
+@media screen {
+  /* Auto-collapse boilerplate. */
+  :is(#status-of-memo, #copyright) p {
+    margin: -2px 0;
+    max-height: 0;
+    transition: max-height 2s ease, margin 0.5s ease 0.5s;
+    overflow: hidden;
+  }
+  :is(#status-of-memo, #copyright):hover p,
+  :is(#status-of-memo, #copyright) h2:target ~ p {
+    margin: 0.5em 0;
+    max-height: 500px;
+    overflow: auto;
+  }
+  pre, svg {
+    display: inline-block;
+    /* In the horizontal direction, sometimes people make over-sized figures.
+       Scrollbars for those is therefore necessary: auto adds them as necessary..
+       In the vertical direction, the line-height can combine with the font
+       asender/descender height to produce scrollbars: hidden avoids that. */
+    overflow: auto hidden;
+  }
+  pre {
+    max-width: 100%;
+    width: calc(100% - 22px - 1em);
+  }
+  svg {
+    max-width: calc(100% - 22px - 1em);
+  }
+  figure pre {
+    display: block;
+    width: calc(100% - 25px);
+  }
+  :is(pre, svg) + .pilcrow {
+    display: inline-block;
+    vertical-align: text-bottom;
+    padding-bottom: 8px;
+  }
+}
+
+/* aside, blockquote */
+aside, blockquote {
+  margin-left: 0;
+  padding: 0 2em;
+  font-style: italic;
+}
+blockquote {
+  margin: 1em 0;
+  border-left: 2px var(--pilcrow-strong) solid;
+}
+cite {
+  display: block;
+  text-align: right;
+  font-style: italic;
+}
+
+/* tables */
+table {
+  width: auto;
+  max-width: 100%;
+  margin: 0 0 1em;
+  border-collapse: collapse;
+}
+table.right {
+  margin-left: auto;
+}
+table.center {
+  margin-left: auto;
+  margin-right: auto;
+}
+table.left {
+  margin-right: auto;
+}
+table .text-left {
+  text-align: left;
+}
+table .text-center {
+  text-align: center;
+}
+table .text-right {
+  text-align: right;
+}
+
+thead, tbody {
+  border: 1px solid var(--line-color);
+}
+th, td {
+  text-align: left;
+  vertical-align: top;
+  padding: 5px 10px;
+}
+th {
+  background-color: var(--line-color);
+}
+:is(tr:nth-child(2n), thead+tbody > tr:nth-child(2n+1)) > td {
+  background-color: var(--background-color);
+}
+:is(tr:nth-child(2n+1), thead+tbody > tr:nth-child(2n)) > td {
+  background-color: var(--highlight-color);
+}
+table caption {
+  margin: 0;
+  padding: 3px 0 3px 1em;
+}
+table p {
+  margin: 0;
+}
+
+/* pilcrow */
+a.pilcrow {
+  margin-left: 3px;
+  opacity: 0.2;
+  user-select: none;
+  &[href] {
+    color: var(--pilcrow-weak);
+    &:hover { text-decoration: none; }
+  }
+}
+@media not print {
+  :hover > a.pilcrow, a.pilcrow:focus {
+    opacity: 1;
+  }
+  a.pilcrow[href]:hover {
+    color: var(--pilcrow-strong);
+    background-color: transparent;
+  }
+}
+@media print {
+  a.pilcrow {
+    display: none;
+  }
+}
+
+/* misc */
+hr {
+  border: 0;
+  border-top: 1px solid var(--line-color);
+}
+.bcp14 {
+  font-variant: small-caps;
+  font-weight: 600;
+  font-size: var(--small-font-size);
+}
+.role {
+  font-variant: all-small-caps;
+}
+sub, sup {
+  line-height: 1;
+  font-size: 80%;
+}
+
+/* info block */
+#identifiers {
+  margin: 0;
+  font-size: var(--small-font-size);
+  line-height: 18px;
+  --identifier-width: 15ch;
+  & dt {
+    width: var(--identifier-width);
+    min-width: var(--identifier-width);
+    clear: left;
+    float: left;
+    text-align: right;
+    margin-right: 1ch;
+  }
+  & dd {
+    margin: 0;
+    margin-left: calc(1em + var(--identifier-width)) !important;
+    min-width: 5em;
+  }
+  & .authors {
+    & .author {
+      display: inline-block;
+      margin-right: 1.5em;
+    }
+    & .org {
+      font-style: italic;
+    }
+  }
+}
+
+/* The prepared/rendered info at the very bottom of the page */
+.docInfo {
+  color: #999;
+  font-size: 0.9em;
+  font-style: italic;
+  margin-top: 2em;
+}
+.docInfo .prepared {
+  float: right;
+}
+
+/* table of contents */
+#toc {
+  padding: 0.75em 0 2em 0;
+  margin-bottom: 1em;
+
+  & nav {
+    & ul {
+      margin: 0 0.5em 0 0;
+      padding: 0;
+      list-style: none;
+    }
+    & li {
+      line-height: 1.3em;
+      margin: 2px 0;
+      padding-left: 1.2em;
+      text-indent: -1.2em;
+    }
+  }
+  & a.xref {
+    white-space: normal;
+  }
+}
+
+.references {
+  & > dt {
+    text-align: right;
+    font-weight: bold;
+    min-width: 10ch;
+    margin-right: 1.5ch;
+    &:target::before {
+      content: "⇒";
+      margin: 0 10px 0 -25px;
+    }
+  }
+  & > dd {
+    margin-left: 12ch !important;
+    overflow: visible;
+    & .refInstance {
+      margin-bottom: 0.8em;
+    }
+    & .ascii {
+      margin-bottom: 0.25em;
+    }
+  }
+}
+
+#rfc\.index\.index + ul {
+  margin-left: 0;
+}
+
+/* authors */
+address.vcard {
+  font-style: normal;
+  max-width: 20em;
+  margin: 1em auto 1em 0;
+
+  & .nameRole {
+    font-weight: 700;
+    margin-left: 0;
+  }
+  & .label {
+    margin: 0.5em 0;
+  }
+  & .type {
+    display: none;
+  }
+  & .alternative-contact {
+    margin: 0.5em 0 0.25em 0;
+  }
+  & .non-ascii {
+    margin: 0 0 0 2em;
+  }
+  & div.left {
+    text-align: left;
+  }
+  & div.right {
+    text-align: right;
+  }
+}
+
+hr.addr {
+  border-top: 1px dashed;
+  margin: 0;
+  color: #ddd;
+  max-width: calc(100% - 16px);
+}
+@media (min-width: 500px) {
+  #authors-addresses > section {
+    column-count: 2;
+    column-gap: 20px;
+  }
+  #authors-addresses > section > h2 {
+    column-span: all;
+  }
+  /* hack for break-inside: avoid-column */
+  #authors-addresses address {
+    display: inline-block;
+    break-inside: avoid-column;
+  }
+}
+
+/* Comments */
+.rfcEditorRemove p:first-of-type {
+  font-style: italic;
+}
+.cref {
+  background-color: rgba(249, 232, 105, 0.3);
+  padding: 2px 4px;
+}
+.crefSource {
+  font-style: italic;
+}
+
+@media screen {
+  #toc nav {
+    font-family: var(--font-title);
+    font-weight: 360;
+    & > ul { margin-bottom: 2em; }
+    & ul {
+      margin: 0 0 0 4px;
+      & :is(p, li) {
+        margin: 2px 0;
+      }
+    }
+  }
+  #toc a.toplink {
+    float: right;
+  }
+}
+@media not screen {
+  #toc a.toplink {
+    display: none;
+  }
+}
+
+
+/* TOC layout for smaller screens */
+@media screen and (max-width: 929px) {
+  #toc {
+    position: fixed;
+    z-index: 2;
+    top: 0;
+    right: 0;
+    padding: 1px 0 0 0;
+    margin: 0;
+    border-bottom: 1px solid #ccc;
+    opacity: 0.6;
+  }
+  #toc h2 {
+    margin: 0;
+    padding: 2px 0 2px 6px;
+    padding-right: 1em;
+    font-size: 18px;
+    line-height: 24px;
+    min-width: 190px;
+    text-align: right;
+    background-color: #444;
+    color: white;
+    cursor: pointer;
+    &::before { /* css hamburger */
+      float: right;
+      position: relative;
+      width: 1em;
+      height: 1px;
+      left: -164px;
+      margin: 8px 0 0 0;
+      background: white none repeat scroll 0 0;
+      box-shadow: 0 4px 0 0 white, 0 8px 0 0 white;
+      content: "";
+    }
+  }
+  #toc nav {
+    display: none;
+    background-color: var(--background-color);
+    padding: 0.5em 1em 1em;
+    overflow: auto;
+    overscroll-behavior: contain;
+    height: calc(100vh - 48px);
+    border-left: 1px solid #ddd;
+  }
+  #toc.active {
+    opacity: 1;
+    & nav { display: block; }
+  }
+  /* Make the collapsed ToC header render white on gray also when it's a link */
+  #toc h2 a,
+  #toc h2 a:is(:link, :focus, :hover),
+  #toc a.toplink,
+  #toc a.toplink:hover {
+    color: white;
+    background-color: #444;
+    text-decoration: none;
+  }
+  #toc a.toplink {
+    margin: 2px 0.5em 0;
+  }
+}
+
+/* TOC layout for wide screens */
+@media screen and (min-width: 930px) {
+  body {
+    padding-right: 360px;
+    padding-right: calc(min(180px + 20%, 500px));
+  }
+  #toc {
+    position: fixed;
+    bottom: 0;
+    right: 0;
+    right: calc(50vw - 480px);
+    width: 312px;
+    margin: 0;
+    padding: 0;
+    z-index: 1;
+  }
+  #toc h2 {
+    margin: 0;
+    padding: 0.25em 1em 1em 0;
+  }
+  #toc nav {
+    display: block;
+    height: calc(90vh - 84px);
+    bottom: 0;
+    padding: 0.5em 0 2em;
+    overflow: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+  }
+  img { /* future proofing */
+    max-width: 100%;
+    height: auto;
+  }
+  #toc a.toplink {
+    margin: 8px 0.5em 0;
+  }
+}
+
+/* pagination */
+@media print {
+  body {
+    width: 100%;
+  }
+  p {
+    orphans: 3;
+    widows: 3;
+  }
+  #n-copyright-notice {
+    border-bottom: none;
+  }
+  #toc, #n-introduction {
+    page-break-before: always;
+  }
+  #toc {
+    border-top: none;
+    padding-top: 0;
+  }
+  figure, pre, .vcard {
+    page-break-inside: avoid;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    page-break-after: avoid;
+  }
+  :is(h2, h3, h4, h5, h6)+*, dd {
+    page-break-before: avoid;
+  }
+  pre {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    font-size: 10pt;
+  }
+  table {
+    border: 1px solid #ddd;
+  }
+  td {
+    border-top: 1px solid #ddd;
+  }
+}
+
+@page :first {
+  padding-top: 0;
+  @top-left {
+    content: normal;
+    border: none;
+  }
+  @top-center {
+    content: normal;
+    border: none;
+  }
+  @top-right {
+    content: normal;
+    border: none;
+  }
+}
+
+@page {
+  size: A4;
+  margin-bottom: 45mm;
+  padding-top: 20px;
+}
+
+/* Dark mode. */
+@media (prefers-color-scheme: dark) {
+:root {
+  --background-color: #121212;
+  --text-color: #f0f0f0;
+  --title-color: #fff;
+  --link-color: #4da4f0;
+  --highlight-color: #282828;
+  --line-color: #444;
+  --pilcrow-weak: #444;
+  --pilcrow-strong: #666;
+  scrollbar-color: #777 #333;
+}
+}
+
+/* SVG Trick: a prefix match works because only black and white are allowed */
+svg :is([stroke="black"], [stroke^="#000"]) {
+  stroke: var(--text-color);
+}
+svg :is([stroke="white"], [stroke^="#fff"]) {
+  stroke: var(--background-color);
+}
+svg :is([fill="black"], [fill^="#000"], :not([fill])) {
+  fill: var(--text-color);
+}
+svg :is([fill="white"], [fill^="#fff"]) {
+  fill: var(--background-color);
+}
+</style>
+
+</head>
+<body class="xml2rfc">
+<table class="ears">
+<thead><tr>
+<td class="left">Internet-Draft</td>
+<td class="center">Globally Relevant HTTPS RRs</td>
+<td class="right">July 2026</td>
+</tr></thead>
+<tfoot><tr>
+<td class="left">Kinnear, et al.</td>
+<td class="center">Expires 7 January 2027</td>
+<td class="right">[Page]</td>
+</tr></tfoot>
+</table>
+<div id="external-metadata" class="document-information"></div>
+<div id="internal-metadata" class="document-information">
+<dl id="identifiers">
+<dt class="label-workgroup">Workgroup:</dt>
+<dd class="workgroup">Network Working Group</dd>
+<dt class="label-internet-draft">Internet-Draft:</dt>
+<dd class="internet-draft">draft-kinnear-dnsop-globally-relevant-latest</dd>
+<dt class="label-published">Published:</dt>
+<dd class="published">
+<time datetime="2026-07-06" class="published">6 July 2026</time>
+    </dd>
+<dt class="label-intended-status">Intended Status:</dt>
+<dd class="intended-status">Standards Track</dd>
+<dt class="label-expires">Expires:</dt>
+<dd class="expires"><time datetime="2027-01-07">7 January 2027</time></dd>
+<dt class="label-authors">Authors:</dt>
+<dd class="authors">
+<div class="author">
+      <div class="author-name">E. Kinnear</div>
+<div class="org">Apple Inc.</div>
+</div>
+<div class="author">
+      <div class="author-name">N. Jaju</div>
+<div class="org">Google</div>
+</div>
+<div class="author">
+      <div class="author-name">I. Swett</div>
+<div class="org">Google</div>
+</div>
+</dd>
+</dl>
+</div>
+<h1 id="title">Globally Relevant HTTPS RRs</h1>
+<section id="section-abstract">
+      <h2 id="abstract"><a href="#abstract" class="selfRef">Abstract</a></h2>
+<p id="section-abstract-1">DNS answers for SVCB and HTTPS resource records are typically treated as
+scoped to the network on which they were obtained. This requires clients to
+re-resolve DNS when changing network attachments, adding latency to connection
+establishment. This document defines a new SvcParamKey, "globally-relevant",
+for use in SVCB and HTTPS DNS resource records as defined in <span>[<a href="#RFC9460" class="cite xref">RFC9460</a>]</span>. When
+present, this boolean flag indicates that the service binding parameters in
+the record are valid regardless of the client's network attachment point.
+Clients that observe this flag can reuse cached SVCB and HTTPS records across
+network changes, subject to normal TTL expiry.<a href="#section-abstract-1" class="pilcrow">¶</a></p>
+</section>
+<section class="note rfcEditorRemove" id="section-note.1">
+      <h2 id="name-about-this-document">
+<a href="#name-about-this-document" class="section-name selfRef">About This Document</a>
+      </h2>
+<p id="section-note.1-1">This note is to be removed before publishing as an RFC.<a href="#section-note.1-1" class="pilcrow">¶</a></p>
+<p id="section-note.1-2">
+        The latest revision of this draft can be found at <span><a href="https://ekinnear.github.io/draft-kinnear-globally-relevant/draft-kinnear-dnsop-globally-relevant.html">https://ekinnear.github.io/draft-kinnear-globally-relevant/draft-kinnear-dnsop-globally-relevant.html</a></span>.
+        Status information for this document may be found at <span><a href="https://datatracker.ietf.org/doc/draft-kinnear-dnsop-globally-relevant/">https://datatracker.ietf.org/doc/draft-kinnear-dnsop-globally-relevant/</a></span>.<a href="#section-note.1-2" class="pilcrow">¶</a></p>
+<p id="section-note.1-3">Source for this draft and an issue tracker can be found at
+        <span><a href="https://github.com/ekinnear/draft-kinnear-globally-relevant">https://github.com/ekinnear/draft-kinnear-globally-relevant</a></span>.<a href="#section-note.1-3" class="pilcrow">¶</a></p>
+</section>
+<div id="status-of-memo">
+<section id="section-boilerplate.1">
+        <h2 id="name-status-of-this-memo">
+<a href="#name-status-of-this-memo" class="section-name selfRef">Status of This Memo</a>
+        </h2>
+<p id="section-boilerplate.1-1">
+        This Internet-Draft is submitted in full conformance with the
+        provisions of BCP 78 and BCP 79.<a href="#section-boilerplate.1-1" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-2">
+        Internet-Drafts are working documents of the Internet Engineering Task
+        Force (IETF). Note that other groups may also distribute working
+        documents as Internet-Drafts. The list of current Internet-Drafts is
+        at <span><a href="https://datatracker.ietf.org/drafts/current/">https://datatracker.ietf.org/drafts/current/</a></span>.<a href="#section-boilerplate.1-2" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-3">
+        Internet-Drafts are draft documents valid for a maximum of six months
+        and may be updated, replaced, or obsoleted by other documents at any
+        time. It is inappropriate to use Internet-Drafts as reference
+        material or to cite them other than as "work in progress."<a href="#section-boilerplate.1-3" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.1-4">
+        This Internet-Draft will expire on 7 January 2027.<a href="#section-boilerplate.1-4" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="copyright">
+<section id="section-boilerplate.2">
+        <h2 id="name-copyright-notice">
+<a href="#name-copyright-notice" class="section-name selfRef">Copyright Notice</a>
+        </h2>
+<p id="section-boilerplate.2-1">
+            Copyright (c) 2026 IETF Trust and the persons identified as the
+            document authors. All rights reserved.<a href="#section-boilerplate.2-1" class="pilcrow">¶</a></p>
+<p id="section-boilerplate.2-2">
+            This document is subject to BCP 78 and the IETF Trust's Legal
+            Provisions Relating to IETF Documents
+            (<span><a href="https://trustee.ietf.org/license-info">https://trustee.ietf.org/license-info</a></span>) in effect on the date of
+            publication of this document. Please review these documents
+            carefully, as they describe your rights and restrictions with
+            respect to this document. Code Components extracted from this
+            document must include Revised BSD License text as described in
+            Section 4.e of the Trust Legal Provisions and are provided without
+            warranty as described in the Revised BSD License.<a href="#section-boilerplate.2-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="toc">
+<section id="section-toc.1">
+        <a href="#" onclick="scroll(0,0)" class="toplink">▲</a><h2 id="name-table-of-contents">
+<a href="#name-table-of-contents" class="section-name selfRef">Table of Contents</a>
+        </h2>
+<nav class="toc"><ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.1">
+            <p id="section-toc.1-1.1.1" class="keepWithNext"><a href="#section-1" class="auto internal xref">1</a>.  <a href="#name-introduction" class="internal xref">Introduction</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.2">
+            <p id="section-toc.1-1.2.1" class="keepWithNext"><a href="#section-2" class="auto internal xref">2</a>.  <a href="#name-conventions-and-definitions" class="internal xref">Conventions and Definitions</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3">
+            <p id="section-toc.1-1.3.1"><a href="#section-3" class="auto internal xref">3</a>.  <a href="#name-the-globally-relevant-svcpa" class="internal xref">The "globally-relevant" SvcParamKey</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.1">
+                <p id="section-toc.1-1.3.2.1.1" class="keepWithNext"><a href="#section-3.1" class="auto internal xref">3.1</a>.  <a href="#name-wire-format" class="internal xref">Wire Format</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.2">
+                <p id="section-toc.1-1.3.2.2.1"><a href="#section-3.2" class="auto internal xref">3.2</a>.  <a href="#name-presentation-format" class="internal xref">Presentation Format</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.3.2.3">
+                <p id="section-toc.1-1.3.2.3.1"><a href="#section-3.3" class="auto internal xref">3.3</a>.  <a href="#name-applicability" class="internal xref">Applicability</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4">
+            <p id="section-toc.1-1.4.1"><a href="#section-4" class="auto internal xref">4</a>.  <a href="#name-client-behavior" class="internal xref">Client Behavior</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.4.2.1">
+                <p id="section-toc.1-1.4.2.1.1"><a href="#section-4.1" class="auto internal xref">4.1</a>.  <a href="#name-address-synthesis-across-ne" class="internal xref">Address Synthesis Across Networks</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.5">
+            <p id="section-toc.1-1.5.1"><a href="#section-5" class="auto internal xref">5</a>.  <a href="#name-server-behavior" class="internal xref">Server Behavior</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.6">
+            <p id="section-toc.1-1.6.1"><a href="#section-6" class="auto internal xref">6</a>.  <a href="#name-resolver-behavior" class="internal xref">Resolver Behavior</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7">
+            <p id="section-toc.1-1.7.1"><a href="#section-7" class="auto internal xref">7</a>.  <a href="#name-security-considerations" class="internal xref">Security Considerations</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7.2.1">
+                <p id="section-toc.1-1.7.2.1.1"><a href="#section-7.1" class="auto internal xref">7.1</a>.  <a href="#name-incorrect-use" class="internal xref">Incorrect Use</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7.2.2">
+                <p id="section-toc.1-1.7.2.2.1"><a href="#section-7.2" class="auto internal xref">7.2</a>.  <a href="#name-network-filtering" class="internal xref">Network Filtering</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7.2.3">
+                <p id="section-toc.1-1.7.2.3.1"><a href="#section-7.3" class="auto internal xref">7.3</a>.  <a href="#name-dnssec-considerations" class="internal xref">DNSSEC Considerations</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.7.2.4">
+                <p id="section-toc.1-1.7.2.4.1"><a href="#section-7.4" class="auto internal xref">7.4</a>.  <a href="#name-downgrade-and-upgrade-attac" class="internal xref">Downgrade and Upgrade Attacks</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8">
+            <p id="section-toc.1-1.8.1"><a href="#section-8" class="auto internal xref">8</a>.  <a href="#name-privacy-considerations" class="internal xref">Privacy Considerations</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8.2.1">
+                <p id="section-toc.1-1.8.2.1.1"><a href="#section-8.1" class="auto internal xref">8.1</a>.  <a href="#name-cross-network-client-tracki" class="internal xref">Cross-Network Client Tracking via Unique Addresses</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8.2.1.2.1">
+                    <p id="section-toc.1-1.8.2.1.2.1.1"><a href="#section-8.1.1" class="auto internal xref">8.1.1</a>.  <a href="#name-comparison-to-existing-trac" class="internal xref">Comparison to Existing Tracking Vectors</a></p>
+</li>
+                  <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.8.2.1.2.2">
+                    <p id="section-toc.1-1.8.2.1.2.2.1"><a href="#section-8.1.2" class="auto internal xref">8.1.2</a>.  <a href="#name-client-mitigations" class="internal xref">Client Mitigations</a></p>
+</li>
+                </ul>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.9">
+            <p id="section-toc.1-1.9.1"><a href="#section-9" class="auto internal xref">9</a>.  <a href="#name-iana-considerations" class="internal xref">IANA Considerations</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.10">
+            <p id="section-toc.1-1.10.1"><a href="#section-10" class="auto internal xref">10</a>. <a href="#name-references" class="internal xref">References</a></p>
+<ul class="compact toc ulBare ulEmpty">
+<li class="compact toc ulBare ulEmpty" id="section-toc.1-1.10.2.1">
+                <p id="section-toc.1-1.10.2.1.1"><a href="#section-10.1" class="auto internal xref">10.1</a>.  <a href="#name-normative-references" class="internal xref">Normative References</a></p>
+</li>
+              <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.10.2.2">
+                <p id="section-toc.1-1.10.2.2.1"><a href="#section-10.2" class="auto internal xref">10.2</a>.  <a href="#name-informative-references" class="internal xref">Informative References</a></p>
+</li>
+            </ul>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.11">
+            <p id="section-toc.1-1.11.1"><a href="#appendix-A" class="auto internal xref"></a><a href="#name-acknowledgments" class="internal xref">Acknowledgments</a></p>
+</li>
+          <li class="compact toc ulBare ulEmpty" id="section-toc.1-1.12">
+            <p id="section-toc.1-1.12.1"><a href="#appendix-B" class="auto internal xref"></a><a href="#name-authors-addresses" class="internal xref">Authors' Addresses</a></p>
+</li>
+        </ul>
+</nav>
+</section>
+</div>
+<div id="introduction">
+<section id="section-1">
+      <h2 id="name-introduction">
+<a href="#section-1" class="section-number selfRef">1. </a><a href="#name-introduction" class="section-name selfRef">Introduction</a>
+      </h2>
+<p id="section-1-1">When a client changes its network attachment, for example, by switching from one
+Wi-Fi network to another, transitioning between Wi-Fi and cellular
+connectivity, or connecting or disconnecting a VPN, current practice requires
+it to re-resolve DNS records for connections on the new network attachment.
+This is because DNS answers may be network-specific due to split-horizon DNS
+deployments, geographic load balancing, or network-level content policies. The
+re-resolution adds latency to connection establishment after every network
+transition, delaying the user experience.<a href="#section-1-1" class="pilcrow">¶</a></p>
+<p id="section-1-2">Many widely-used services, however, serve DNS answers that are identical
+regardless of which network the query traverses. Their HTTPS and SVCB resource
+records, including ALPN protocol identifiers, Encrypted ClientHello
+(ECH) configurations, port numbers, and address hints, are globally consistent.
+For these services, re-resolving DNS after a network change is unnecessary
+overhead that delays connection establishment without providing any benefit.<a href="#section-1-2" class="pilcrow">¶</a></p>
+<p id="section-1-3">This document defines a new SvcParamKey called "globally-relevant" for SVCB
+and HTTPS resource records <span>[<a href="#RFC9460" class="cite xref">RFC9460</a>]</span>. It is a boolean flag with an empty
+value that authoritative DNS servers set to indicate the record's service
+binding parameters are valid regardless of network context. Clients observing
+this flag <span class="bcp14">MAY</span> continue using cached SVCB and HTTPS records after network
+transitions, avoiding the latency of re-resolution.<a href="#section-1-3" class="pilcrow">¶</a></p>
+<p id="section-1-4">This mechanism is strictly opt-in. Services that do not include the
+"globally-relevant" SvcParamKey continue with current behavior, and their
+records are treated as network-scoped as they are today.<a href="#section-1-4" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="conventions-and-definitions">
+<section id="section-2">
+      <h2 id="name-conventions-and-definitions">
+<a href="#section-2" class="section-number selfRef">2. </a><a href="#name-conventions-and-definitions" class="section-name selfRef">Conventions and Definitions</a>
+      </h2>
+<p id="section-2-1">The key words "<span class="bcp14">MUST</span>", "<span class="bcp14">MUST NOT</span>", "<span class="bcp14">REQUIRED</span>", "<span class="bcp14">SHALL</span>", "<span class="bcp14">SHALL NOT</span>", "<span class="bcp14">SHOULD</span>", "<span class="bcp14">SHOULD NOT</span>", "<span class="bcp14">RECOMMENDED</span>", "<span class="bcp14">NOT RECOMMENDED</span>",
+"<span class="bcp14">MAY</span>", and "<span class="bcp14">OPTIONAL</span>" in this document are to be interpreted as
+described in BCP 14 <span>[<a href="#RFC2119" class="cite xref">RFC2119</a>]</span> <span>[<a href="#RFC8174" class="cite xref">RFC8174</a>]</span> when, and only when, they
+appear in all capitals, as shown here.<a href="#section-2-1" class="pilcrow">¶</a></p>
+<p id="section-2-2">The following terms are used in this document:<a href="#section-2-2" class="pilcrow">¶</a></p>
+<span class="break"></span><dl class="dlParallel" id="section-2-3">
+        <dt id="section-2-3.1">Network attachment change:</dt>
+        <dd style="margin-left: 1.5em" id="section-2-3.2">
+          <p id="section-2-3.2.1">A change in the client's network connectivity, such as switching from one
+Wi-Fi network to another, transitioning between Wi-Fi and cellular
+connectivity, or connecting or disconnecting a VPN.<a href="#section-2-3.2.1" class="pilcrow">¶</a></p>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-2-3.3">Authoritative server:</dt>
+        <dd style="margin-left: 1.5em" id="section-2-3.4">
+          <p id="section-2-3.4.1">A DNS server that is authoritative for a zone and generates responses
+for names in that zone, as defined in <span>[<a href="#RFC9499" class="cite xref">RFC9499</a>]</span>.<a href="#section-2-3.4.1" class="pilcrow">¶</a></p>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-2-3.5">Recursive resolver:</dt>
+        <dd style="margin-left: 1.5em" id="section-2-3.6">
+          <p id="section-2-3.6.1">A DNS resolver that resolves queries on behalf of a client by
+iteratively querying authoritative servers, as defined in <span>[<a href="#RFC9499" class="cite xref">RFC9499</a>]</span>.<a href="#section-2-3.6.1" class="pilcrow">¶</a></p>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-2-3.7">Origin server:</dt>
+        <dd style="margin-left: 1.5em" id="section-2-3.8">
+          <p id="section-2-3.8.1">The server that terminates the client's transport connection to the
+service identified by an SVCB or HTTPS resource record. For HTTP-based
+services, this is the origin server as defined in
+<span><a href="https://rfc-editor.org/rfc/rfc9110#section-3.6" class="relref">Section 3.6</a> of [<a href="#RFC9110" class="cite xref">RFC9110</a>]</span>. The <code>ipv4hint</code> and <code>ipv6hint</code> parameters of
+an SVCB or HTTPS record are hints for reaching this server.<a href="#section-2-3.8.1" class="pilcrow">¶</a></p>
+</dd>
+        <dd class="break"></dd>
+<dt id="section-2-3.9">Operator:</dt>
+        <dd style="margin-left: 1.5em" id="section-2-3.10">
+          <p id="section-2-3.10.1">In this document, an entity that runs both the authoritative server for
+a service's zone and the origin server for that service. Where a single
+operator holds both roles, it can correlate observations between DNS
+queries and connections.<a href="#section-2-3.10.1" class="pilcrow">¶</a></p>
+</dd>
+      <dd class="break"></dd>
+</dl>
+</section>
+</div>
+<div id="the-globally-relevant-svcparamkey">
+<section id="section-3">
+      <h2 id="name-the-globally-relevant-svcpa">
+<a href="#section-3" class="section-number selfRef">3. </a><a href="#name-the-globally-relevant-svcpa" class="section-name selfRef">The "globally-relevant" SvcParamKey</a>
+      </h2>
+<p id="section-3-1">The "globally-relevant" SvcParamKey is a boolean flag parameter for SVCB and
+HTTPS resource records <span>[<a href="#RFC9460" class="cite xref">RFC9460</a>]</span>. Its presence indicates that the
+authoritative DNS server asserts the service binding parameters in this record
+are valid regardless of the client's network attachment point.<a href="#section-3-1" class="pilcrow">¶</a></p>
+<div id="wire-format">
+<section id="section-3.1">
+        <h3 id="name-wire-format">
+<a href="#section-3.1" class="section-number selfRef">3.1. </a><a href="#name-wire-format" class="section-name selfRef">Wire Format</a>
+        </h3>
+<p id="section-3.1-1">The SvcParamKey number is TBD. The value <span class="bcp14">MUST</span> be empty (length 0), following the
+same pattern as "no-default-alpn" (SvcParamKey 2) defined in Section 7.1.2 of
+<span>[<a href="#RFC9460" class="cite xref">RFC9460</a>]</span>. If a client receives this SvcParamKey with a non-empty value, the
+client <span class="bcp14">MUST</span> ignore the parameter.<a href="#section-3.1-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="presentation-format">
+<section id="section-3.2">
+        <h3 id="name-presentation-format">
+<a href="#section-3.2" class="section-number selfRef">3.2. </a><a href="#name-presentation-format" class="section-name selfRef">Presentation Format</a>
+        </h3>
+<p id="section-3.2-1">In DNS zone file presentation format, the key is represented as simply
+<code>globally-relevant</code> with no value. For example:<a href="#section-3.2-1" class="pilcrow">¶</a></p>
+<div class="lang-dns-rr sourcecode" id="section-3.2-2">
+<pre>
+example.com. 300 IN HTTPS 1 . alpn=h2,h3 globally-relevant
+</pre><a href="#section-3.2-2" class="pilcrow">¶</a>
+</div>
+</section>
+</div>
+<div id="applicability">
+<section id="section-3.3">
+        <h3 id="name-applicability">
+<a href="#section-3.3" class="section-number selfRef">3.3. </a><a href="#name-applicability" class="section-name selfRef">Applicability</a>
+        </h3>
+<p id="section-3.3-1">This parameter is applicable to both SVCB (RR type 64) and HTTPS (RR type 65)
+resource records. It is only meaningful in ServiceMode records (those with
+SvcPriority greater than 0) that carry service binding parameters. It has no
+meaning in AliasMode records.<a href="#section-3.3-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="client-behavior">
+<section id="section-4">
+      <h2 id="name-client-behavior">
+<a href="#section-4" class="section-number selfRef">4. </a><a href="#name-client-behavior" class="section-name selfRef">Client Behavior</a>
+      </h2>
+<p id="section-4-1">When a client receives an SVCB or HTTPS record containing the
+"globally-relevant" SvcParamKey, it <span class="bcp14">MAY</span> retain the cached record and continue
+using its service parameters after a network attachment change.<a href="#section-4-1" class="pilcrow">¶</a></p>
+<p id="section-4-2">The record's TTL still applies. The "globally-relevant" flag does not extend the
+record's cache lifetime; it only permits reuse of the cached record across
+network changes within the remaining TTL window.<a href="#section-4-2" class="pilcrow">¶</a></p>
+<p id="section-4-3">If a client experiences connection failures when using cached parameters after a
+network change, it <span class="bcp14">SHOULD</span> re-resolve the record regardless of the
+"globally-relevant" flag.<a href="#section-4-3" class="pilcrow">¶</a></p>
+<p id="section-4-4">Clients <span class="bcp14">MAY</span> choose to ignore the "globally-relevant" flag entirely and always
+re-resolve on network changes. This flag is purely permissive and does not
+mandate any specific client behavior.<a href="#section-4-4" class="pilcrow">¶</a></p>
+<p id="section-4-5">When address hints (<code>ipv4hint</code>, <code>ipv6hint</code>) are present in a record carrying
+the "globally-relevant" flag, the globally-relevant assertion covers those
+hints as well. Clients <span class="bcp14">MAY</span> use the cached address hints on the new network,
+though they <span class="bcp14">SHOULD</span> prefer fresh address resolution if readily available and <span class="bcp14">MAY</span>
+choose to re-resolve in parallel with connection attempts to the cached address
+hints.<a href="#section-4-5" class="pilcrow">¶</a></p>
+<div id="address-synthesis-across-networks">
+<section id="section-4.1">
+        <h3 id="name-address-synthesis-across-ne">
+<a href="#section-4.1" class="section-number selfRef">4.1. </a><a href="#name-address-synthesis-across-ne" class="section-name selfRef">Address Synthesis Across Networks</a>
+        </h3>
+<p id="section-4.1-1">On IPv6-only networks that provide NAT64 connectivity <span>[<a href="#RFC6146" class="cite xref">RFC6146</a>]</span>, clients can
+synthesize IPv6 addresses from IPv4 addresses using the network's NAT64 prefix,
+discovered via Router Advertisements <span>[<a href="#RFC8781" class="cite xref">RFC8781</a>]</span> or DNS-based mechanisms
+<span>[<a href="#RFC7050" class="cite xref">RFC7050</a>]</span>. The "globally-relevant" flag asserts that the addresses in
+<code>ipv4hint</code> and <code>ipv6hint</code> are globally valid as published by the authoritative
+server; it does not assert the validity of any locally-synthesized addresses
+derived from those hints.<a href="#section-4.1-1" class="pilcrow">¶</a></p>
+<p id="section-4.1-2">If a client has synthesized an IPv6 address from an <code>ipv4hint</code> value using one
+network's NAT64 prefix, it <span class="bcp14">MUST NOT</span> reuse that synthesized address after moving
+to a different network. Instead, the client <span class="bcp14">MUST</span> re-synthesize using the NAT64
+prefix of the new network, if available. The original <code>ipv4hint</code> value itself
+remains valid and can be used as input to the new synthesis.<a href="#section-4.1-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="server-behavior">
+<section id="section-5">
+      <h2 id="name-server-behavior">
+<a href="#section-5" class="section-number selfRef">5. </a><a href="#name-server-behavior" class="section-name selfRef">Server Behavior</a>
+      </h2>
+<p id="section-5-1">An authoritative DNS server <span class="bcp14">SHOULD</span> set the "globally-relevant" SvcParamKey
+only when the service binding parameters in the record are consistent across
+all resolvers and network paths. This typically applies to globally-deployed
+services with uniform configurations.<a href="#section-5-1" class="pilcrow">¶</a></p>
+<p id="section-5-2">Services that employ split-horizon DNS, geo-dependent load balancing, or
+network-specific configurations <span class="bcp14">MUST NOT</span> set this flag. The flag asserts that
+all parameters in the record, including ALPN values, ECH configurations, and
+port numbers, are globally valid. If any parameter varies by network context,
+the flag <span class="bcp14">MUST NOT</span> be set.<a href="#section-5-2" class="pilcrow">¶</a></p>
+<p id="section-5-3">In particular, if the record includes <code>ipv4hint</code> or <code>ipv6hint</code> parameters,
+the addresses contained in those hints <span class="bcp14">MUST</span> be reachable and correct on all
+networks, not just the network on which the record was originally resolved.
+Servers that use address hints to direct clients to network-specific
+endpoints (e.g., CDN edge nodes selected by resolver location) <span class="bcp14">MUST NOT</span> set
+the "globally-relevant" flag unless those address hints are valid globally.<a href="#section-5-3" class="pilcrow">¶</a></p>
+<p id="section-5-4">Operators are strongly suggested to carefully audit their DNS configurations
+before deploying the "globally-relevant" flag, as incorrect use could cause
+clients to use inappropriate service parameters after network changes.<a href="#section-5-4" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="resolver-behavior">
+<section id="section-6">
+      <h2 id="name-resolver-behavior">
+<a href="#section-6" class="section-number selfRef">6. </a><a href="#name-resolver-behavior" class="section-name selfRef">Resolver Behavior</a>
+      </h2>
+<p id="section-6-1">Recursive resolvers <span class="bcp14">MUST</span> pass the "globally-relevant" SvcParamKey through
+to clients transparently, without modification.<a href="#section-6-1" class="pilcrow">¶</a></p>
+<p id="section-6-2">Resolvers <span class="bcp14">MUST NOT</span> add or remove the "globally-relevant" flag. The assertion
+of global relevance is made by the authoritative server for the zone, and
+resolvers are not in a position to make or override this determination.<a href="#section-6-2" class="pilcrow">¶</a></p>
+<p id="section-6-3">Some resolvers modify DNS responses for operational purposes, such as DNS64
+synthesis <span>[<a href="#RFC6147" class="cite xref">RFC6147</a>]</span> or content filtering. When a resolver synthesizes or
+rewrites a response, it is effectively acting as the authoritative source for
+that modified answer. Such synthesized answers <span class="bcp14">SHOULD NOT</span> carry
+the "globally-relevant" flag, as the resolver cannot assert that its
+locally-modified response is valid on other networks.<a href="#section-6-3" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="security-considerations">
+<section id="section-7">
+      <h2 id="name-security-considerations">
+<a href="#section-7" class="section-number selfRef">7. </a><a href="#name-security-considerations" class="section-name selfRef">Security Considerations</a>
+      </h2>
+<div id="incorrect-use">
+<section id="section-7.1">
+        <h3 id="name-incorrect-use">
+<a href="#section-7.1" class="section-number selfRef">7.1. </a><a href="#name-incorrect-use" class="section-name selfRef">Incorrect Use</a>
+        </h3>
+<p id="section-7.1-1">If an authoritative server incorrectly sets the "globally-relevant" flag on a
+record whose parameters vary by network, clients may use inappropriate service
+configurations after a network change. This could manifest as connection
+failures or as connections to unintended endpoints if address hints are
+incorrect for the client's new network. Operators bear responsibility for
+ensuring the flag is only set on records with truly globally-consistent
+parameters.<a href="#section-7.1-1" class="pilcrow">¶</a></p>
+<p id="section-7.1-2">Clients <span class="bcp14">MUST NOT</span> reuse cached address hints across network changes for
+connections that are not authenticated by a security protocol, such as TLS.
+This allows clients to reject connections established to an address that
+responds to incoming packets, but no longer represents the desired host.<a href="#section-7.1-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="network-filtering">
+<section id="section-7.2">
+        <h3 id="name-network-filtering">
+<a href="#section-7.2" class="section-number selfRef">7.2. </a><a href="#name-network-filtering" class="section-name selfRef">Network Filtering</a>
+        </h3>
+<p id="section-7.2-1">Some networks apply DNS-based content filtering or access control policies.
+The "globally-relevant" flag allows clients to skip DNS re-resolution when
+joining such networks, which means the network's filtered DNS responses would
+not be applied to cached records. However, this does not meaningfully weaken
+network-level controls: users can already bypass DNS-level filtering by using
+alternative resolvers, encrypted DNS, or connecting directly to known IP
+addresses in some cases. Networks that require effective traffic control
+already need to enforce policies at layers beyond DNS, such as IP-level or
+SNI-based firewalling. The "globally-relevant" flag does not change this.<a href="#section-7.2-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="dnssec-considerations">
+<section id="section-7.3">
+        <h3 id="name-dnssec-considerations">
+<a href="#section-7.3" class="section-number selfRef">7.3. </a><a href="#name-dnssec-considerations" class="section-name selfRef">DNSSEC Considerations</a>
+        </h3>
+<p id="section-7.3-1">Where DNSSEC validation is employed, the "globally-relevant" flag does not
+change validation requirements. Cached records that were validated remain
+usable as long as the DNSSEC signatures have not expired. Clients performing
+DNSSEC validation <span class="bcp14">MUST NOT</span> reuse a cached record if the DNSSEC signature has
+expired, even if the record's TTL has not.<a href="#section-7.3-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="downgrade-and-upgrade-attacks">
+<section id="section-7.4">
+        <h3 id="name-downgrade-and-upgrade-attac">
+<a href="#section-7.4" class="section-number selfRef">7.4. </a><a href="#name-downgrade-and-upgrade-attac" class="section-name selfRef">Downgrade and Upgrade Attacks</a>
+        </h3>
+<p id="section-7.4-1">An on-path attacker that can modify DNS responses could strip the
+"globally-relevant" flag from records, causing clients to re-resolve
+unnecessarily after network changes. This degrades performance to current
+behavior but does not otherwise affect security.<a href="#section-7.4-1" class="pilcrow">¶</a></p>
+<p id="section-7.4-2">An on-path attacker could also add the "globally-relevant" flag to a record that
+the authoritative server did not mark as globally relevant. The impact of this
+is limited: the client may reuse a record that would otherwise have been
+re-resolved, which is only problematic if the record was network-specific, and
+the resulting connection will fail to authenticate the host. DNSSEC also
+protects against both of these modification attacks, when deployed.<a href="#section-7.4-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="privacy-considerations">
+<section id="section-8">
+      <h2 id="name-privacy-considerations">
+<a href="#section-8" class="section-number selfRef">8. </a><a href="#name-privacy-considerations" class="section-name selfRef">Privacy Considerations</a>
+      </h2>
+<div id="cross-network-client-tracking-via-unique-addresses">
+<section id="section-8.1">
+        <h3 id="name-cross-network-client-tracki">
+<a href="#section-8.1" class="section-number selfRef">8.1. </a><a href="#name-cross-network-client-tracki" class="section-name selfRef">Cross-Network Client Tracking via Unique Addresses</a>
+        </h3>
+<p id="section-8.1-1">The "globally-relevant" flag permits a client to use cached <code>ipv6hint</code> (or
+<code>ipv4hint</code>) addresses across network attachment changes. An operator that
+wishes to track a specific client across networks could exploit this by
+having its authoritative server return a per-client unique address, for
+example by encoding a client identifier in some of the bits of an IPv6
+address, and then observing the resulting connections at its origin server
+from multiple networks. Because the client reuses the cached address after
+a network change, the operator observes the same unique address connecting
+to its origin server from a different network and links a single client
+identity to both networks.<a href="#section-8.1-1" class="pilcrow">¶</a></p>
+<p id="section-8.1-2">Without "globally-relevant", the client would re-resolve on the new
+network, and the authoritative server would issue a fresh unique address
+for that resolution. The operator would have no DNS-derived signal linking
+the resolutions as the same client, and the connections arriving at the
+origin server would carry different addresses, offering no linkage there
+either. The cross-network linkage exists in this design only because the
+unique address itself acts as a stable identifier that the client carries
+across networks instead of being replaced at each resolution.<a href="#section-8.1-2" class="pilcrow">¶</a></p>
+<p id="section-8.1-3"><span><a href="https://rfc-editor.org/rfc/rfc9076#section-7.1" class="relref">Section 7.1</a> of [<a href="#RFC9076" class="cite xref">RFC9076</a>]</span> recognizes a related class of attack in which
+a user is "re-identified via DNS queries... regardless of the location from
+which the user makes those queries", based on query-pattern correlation
+across time. The cross-network linkage described in this section achieves
+the same result through a different mechanism: rather than correlating
+recurring query patterns observed by a passive watcher, an operator actively
+seeds a chosen identifier into the response returned by its authoritative
+server and recognizes it when the client connects to the resulting address
+at the origin server.<a href="#section-8.1-3" class="pilcrow">¶</a></p>
+<div id="comparison-to-existing-tracking-vectors">
+<section id="section-8.1.1">
+          <h4 id="name-comparison-to-existing-trac">
+<a href="#section-8.1.1" class="section-number selfRef">8.1.1. </a><a href="#name-comparison-to-existing-trac" class="section-name selfRef">Comparison to Existing Tracking Vectors</a>
+          </h4>
+<div id="recursive-resolvers-and-anonymity-sets">
+<section id="section-8.1.1.1">
+            <h5 id="name-recursive-resolvers-and-ano">
+<a href="#section-8.1.1.1" class="section-number selfRef">8.1.1.1. </a><a href="#name-recursive-resolvers-and-ano" class="section-name selfRef">Recursive Resolvers and Anonymity Sets</a>
+            </h5>
+<p id="section-8.1.1.1-1">An authoritative server that returns a per-client unique answer today
+already observes that answer being requested by a specific recursive
+resolver. For clients using a shared public or ISP recursive resolver, the
+authoritative server sees the recursive resolver's address, and the
+client is part of an anonymity set composed of that recursive resolver's
+other users (see <span><a href="https://rfc-editor.org/rfc/rfc9076#section-6.2" class="relref">Section 6.2</a> of [<a href="#RFC9076" class="cite xref">RFC9076</a>]</span>). The set's size depends on
+the deployment (see <span><a href="https://rfc-editor.org/rfc/rfc6973#section-3.3" class="relref">Section 3.3</a> of [<a href="#RFC6973" class="cite xref">RFC6973</a>]</span> for definitions of
+anonymity sets).<a href="#section-8.1.1.1-1" class="pilcrow">¶</a></p>
+<p id="section-8.1.1.1-2">This "hiding" by the recursive resolver is incomplete where the EDNS Client
+Subnet (ECS) option <span>[<a href="#RFC7871" class="cite xref">RFC7871</a>]</span> is used. <span><a href="https://rfc-editor.org/rfc/rfc9076#section-6.2" class="relref">Section 6.2</a> of [<a href="#RFC9076" class="cite xref">RFC9076</a>]</span> notes
+that with ECS, the authoritative name server "sees the original IP address
+(or prefix, depending on the setup)" rather than only the recursive
+resolver's address. An authoritative server returning a per-client unique
+answer can therefore correlate that answer with the client's subnet on
+each fresh resolution, providing some cross-network correlation even
+without the "globally-relevant" flag.<a href="#section-8.1.1.1-2" class="pilcrow">¶</a></p>
+<p id="section-8.1.1.1-3">Without the "globally-relevant" flag, the authoritative server's view is
+partitioned by recursive resolver: it sees one anonymity set per recursive
+resolver, and a single client moving between networks that use different
+recursive resolvers appears as independent observations from disjoint sets.
+Caching at each recursive resolver further limits how often the
+authoritative server is queried at all.<a href="#section-8.1.1.1-3" class="pilcrow">¶</a></p>
+<p id="section-8.1.1.1-4">The "globally-relevant" flag allows the operator to join observations that
+would otherwise have been separated by recursive resolver boundaries,
+effectively intersecting the per-recursive-resolver anonymity sets and
+shrinking the set in which any one client is hidden (see
+<span><a href="https://rfc-editor.org/rfc/rfc6973#section-5.2.1" class="relref">Section 5.2.1</a> of [<a href="#RFC6973" class="cite xref">RFC6973</a>]</span>).<a href="#section-8.1.1.1-4" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="aliasmode-and-cname-targets">
+<section id="section-8.1.1.2">
+            <h5 id="name-aliasmode-and-cname-targets">
+<a href="#section-8.1.1.2" class="section-number selfRef">8.1.1.2. </a><a href="#name-aliasmode-and-cname-targets" class="section-name selfRef">AliasMode and CNAME Targets</a>
+            </h5>
+<p id="section-8.1.1.2-1">A similar tracking primitive is already available without the
+"globally-relevant" flag. Authoritative servers can return per-client
+unique CNAME targets, SVCB AliasMode targets (<span><a href="https://rfc-editor.org/rfc/rfc9460#section-2.4.2" class="relref">Section 2.4.2</a> of [<a href="#RFC9460" class="cite xref">RFC9460</a>]</span>),
+or other names that function as client identifiers.<a href="#section-8.1.1.2-1" class="pilcrow">¶</a></p>
+<p id="section-8.1.1.2-2">However, the "globally-relevant" attack described here is harder to mount than
+these similar attacks, since a unique IPv4 or IPv6 address used as an
+<code>ipv4hint</code> or <code>ipv6hint</code> value must actually be routable to the operator's
+origin server from every network the client uses, whereas a unique CNAME or
+AliasMode target is merely a label that the client subsequently resolves
+through its local recursive resolver, ultimately pointing at a shared address
+that the operator already serves.<a href="#section-8.1.1.2-2" class="pilcrow">¶</a></p>
+<p id="section-8.1.1.2-3">The label-based approach therefore costs the operator only a DNS record per
+identifier, while the address-based approach costs an IP address per
+identifier and the routing infrastructure to receive traffic on each.<a href="#section-8.1.1.2-3" class="pilcrow">¶</a></p>
+<p id="section-8.1.1.2-4">An arbitrarily long CNAME (or DNAME-induced CNAME) chain reintroduces the same
+tracking capability, because the final A or AAAA record in the chain can encode
+a per-client identifier in either its name or its address, and clients caching
+across networks would carry the chain's terminal answer with them.
+<span>[<a href="#RFC1034" class="cite xref">RFC1034</a>]</span> and <span>[<a href="#RFC6672" class="cite xref">RFC6672</a>]</span> do not normatively limit CNAME chain length, and
+<span><a href="https://rfc-editor.org/rfc/rfc6672#section-2.2" class="relref">Section 2.2</a> of [<a href="#RFC6672" class="cite xref">RFC6672</a>]</span> explicitly notes that
+"fairly lengthy valid chains" may occur. SVCB itself requires clients and
+recursive resolvers to cap AliasMode chains at some implementation-chosen
+depth (<span><a href="https://rfc-editor.org/rfc/rfc9460#section-2.4.2" class="relref">Section 2.4.2</a> of [<a href="#RFC9460" class="cite xref">RFC9460</a>]</span>), but that cap applies only to SVCB
+aliases, not to CNAME redirections. Implementations can bound CNAME chain
+following for resource reasons, but the limit is not interoperable.<a href="#section-8.1.1.2-4" class="pilcrow">¶</a></p>
+<p id="section-8.1.1.2-5">Defending against attacks using CNAME chains is out-of-scope for this document,
+but implementations of "globally-relevant" <span class="bcp14">SHOULD</span> generally apply the same
+cross-network caching policy to all elements of an alias chain consistently,
+reusing either all records in the chain after a network change or none, to
+avoid creating partial-reuse states that have privacy properties differing from
+either endpoint of the chain.<a href="#section-8.1.1.2-5" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="encrypted-dns-and-odoh">
+<section id="section-8.1.1.3">
+            <h5 id="name-encrypted-dns-and-odoh">
+<a href="#section-8.1.1.3" class="section-number selfRef">8.1.1.3. </a><a href="#name-encrypted-dns-and-odoh" class="section-name selfRef">Encrypted DNS and ODoH</a>
+            </h5>
+<p id="section-8.1.1.3-1">Encrypted transports such as DNS-over-TLS <span>[<a href="#RFC7858" class="cite xref">RFC7858</a>]</span>, DNS-over-HTTPS
+<span>[<a href="#RFC8484" class="cite xref">RFC8484</a>]</span>, and Oblivious DNS-over-HTTPS <span>[<a href="#RFC9230" class="cite xref">RFC9230</a>]</span> protect the DNS query
+against on-path observers but do not prevent an authoritative server from
+returning a per-client unique answer. <span><a href="https://rfc-editor.org/rfc/rfc9076#section-6.1.4.1" class="relref">Section 6.1.4.1</a> of [<a href="#RFC9076" class="cite xref">RFC9076</a>]</span> notes
+that "use of encrypted transports does not reduce the data available in the
+recursive resolver".<a href="#section-8.1.1.3-1" class="pilcrow">¶</a></p>
+<p id="section-8.1.1.3-2">ODoH in particular hides the client's IP address from the recursive resolver
+(the "Target" in <span><a href="https://rfc-editor.org/rfc/rfc9230#section-4" class="relref">Section 4</a> of [<a href="#RFC9230" class="cite xref">RFC9230</a>]</span>) and the query contents from the
+proxy, but its threat model treats the authoritative server returning unique
+records per-client as out of scope. A Target or any downstream authoritative
+server "could return a DNS answer corresponding to an entity it controls and
+then observe the subsequent connection from a Client" (see <span><a href="https://rfc-editor.org/rfc/rfc9230#section-11" class="relref">Section 11</a> of [<a href="#RFC9230" class="cite xref">RFC9230</a>]</span>). The "globally-relevant" flag does not change this on a single
+network, but it does extend the same attack surface across networks, subject to
+the constraints described above.<a href="#section-8.1.1.3-2" class="pilcrow">¶</a></p>
+</section>
+</div>
+</section>
+</div>
+<div id="client-mitigations">
+<section id="section-8.1.2">
+          <h4 id="name-client-mitigations">
+<a href="#section-8.1.2" class="section-number selfRef">8.1.2. </a><a href="#name-client-mitigations" class="section-name selfRef">Client Mitigations</a>
+          </h4>
+<p id="section-8.1.2-1">Clients implementing this specification <span class="bcp14">SHOULD</span> apply the following
+mitigations to limit the cross-network tracking risk:<a href="#section-8.1.2-1" class="pilcrow">¶</a></p>
+<ul class="normal">
+<li class="normal" id="section-8.1.2-2.1">
+              <p id="section-8.1.2-2.1.1">Treat <code>ipv4hint</code> and <code>ipv6hint</code> values that appear unlikely to be shared
+with many other clients as candidates for re-resolution after a network
+change, even when the "globally-relevant" flag is present. Examples
+include addresses outside well-known anycast ranges, addresses that
+appear unique to a single client, and addresses with high entropy in
+the host bits.<a href="#section-8.1.2-2.1.1" class="pilcrow">¶</a></p>
+</li>
+            <li class="normal" id="section-8.1.2-2.2">
+              <p id="section-8.1.2-2.2.1">When re-resolving a globally-relevant record on a new network in the
+background (for example, to refresh before TTL expiry), if the new
+network blocks or refuses the resolution, stop using the cached record
+rather than continuing to connect to the previously cached address. A
+failed refresh on a network that otherwise resolves DNS is a signal that
+the cached parameters may not be appropriate for the new network,
+regardless of the flag.<a href="#section-8.1.2-2.2.1" class="pilcrow">¶</a></p>
+</li>
+            <li class="normal" id="section-8.1.2-2.3">
+              <p id="section-8.1.2-2.3.1">Apply existing privacy protections for address hints uniformly to
+globally-relevant records, including the requirement in
+<a href="#incorrect-use" class="auto internal xref">Section 7.1</a> that cached address hints not be reused across
+network changes for connections that are not authenticated by a security
+protocol such as TLS.<a href="#section-8.1.2-2.3.1" class="pilcrow">¶</a></p>
+</li>
+          </ul>
+</section>
+</div>
+</section>
+</div>
+</section>
+</div>
+<div id="iana-considerations">
+<section id="section-9">
+      <h2 id="name-iana-considerations">
+<a href="#section-9" class="section-number selfRef">9. </a><a href="#name-iana-considerations" class="section-name selfRef">IANA Considerations</a>
+      </h2>
+<p id="section-9-1">This document requests IANA to register the following entry in the "Service
+Parameter Keys (SvcParamKeys)" registry <span>[<a href="#RFC9460" class="cite xref">RFC9460</a>]</span>:<a href="#section-9-1" class="pilcrow">¶</a></p>
+<table class="center" id="table-1">
+        <caption><a href="#table-1" class="selfRef">Table 1</a></caption>
+<thead>
+          <tr>
+            <th class="text-left" rowspan="1" colspan="1">Number</th>
+            <th class="text-left" rowspan="1" colspan="1">Name</th>
+            <th class="text-left" rowspan="1" colspan="1">Meaning</th>
+            <th class="text-left" rowspan="1" colspan="1">Change Controller</th>
+            <th class="text-left" rowspan="1" colspan="1">Reference</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="text-left" rowspan="1" colspan="1">TBD</td>
+            <td class="text-left" rowspan="1" colspan="1">globally-relevant</td>
+            <td class="text-left" rowspan="1" colspan="1">Record is valid across network changes</td>
+            <td class="text-left" rowspan="1" colspan="1">IETF</td>
+            <td class="text-left" rowspan="1" colspan="1">(this document)</td>
+          </tr>
+        </tbody>
+      </table>
+</section>
+</div>
+<div id="sec-combined-references">
+<section id="section-10">
+      <h2 id="name-references">
+<a href="#section-10" class="section-number selfRef">10. </a><a href="#name-references" class="section-name selfRef">References</a>
+      </h2>
+<div id="sec-normative-references">
+<section id="section-10.1">
+        <h3 id="name-normative-references">
+<a href="#section-10.1" class="section-number selfRef">10.1. </a><a href="#name-normative-references" class="section-name selfRef">Normative References</a>
+        </h3>
+<dl class="references">
+<dt id="RFC2119">[RFC2119]</dt>
+        <dd>
+<span class="refAuthor">Bradner, S.</span>, <span class="refTitle">"Key words for use in RFCs to Indicate Requirement Levels"</span>, <span class="seriesInfo">BCP 14</span>, <span class="seriesInfo">RFC 2119</span>, <span class="seriesInfo">DOI 10.17487/RFC2119</span>, <time datetime="1997-03" class="refDate">March 1997</time>, <span>&lt;<a href="https://www.rfc-editor.org/rfc/rfc2119">https://www.rfc-editor.org/rfc/rfc2119</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8174">[RFC8174]</dt>
+        <dd>
+<span class="refAuthor">Leiba, B.</span>, <span class="refTitle">"Ambiguity of Uppercase vs Lowercase in RFC 2119 Key Words"</span>, <span class="seriesInfo">BCP 14</span>, <span class="seriesInfo">RFC 8174</span>, <span class="seriesInfo">DOI 10.17487/RFC8174</span>, <time datetime="2017-05" class="refDate">May 2017</time>, <span>&lt;<a href="https://www.rfc-editor.org/rfc/rfc8174">https://www.rfc-editor.org/rfc/rfc8174</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9460">[RFC9460]</dt>
+      <dd>
+<span class="refAuthor">Schwartz, B.</span>, <span class="refAuthor">Bishop, M.</span>, and <span class="refAuthor">E. Nygren</span>, <span class="refTitle">"Service Binding and Parameter Specification via the DNS (SVCB and HTTPS Resource Records)"</span>, <span class="seriesInfo">RFC 9460</span>, <span class="seriesInfo">DOI 10.17487/RFC9460</span>, <time datetime="2023-11" class="refDate">November 2023</time>, <span>&lt;<a href="https://www.rfc-editor.org/rfc/rfc9460">https://www.rfc-editor.org/rfc/rfc9460</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+</dl>
+</section>
+</div>
+<div id="sec-informative-references">
+<section id="section-10.2">
+        <h3 id="name-informative-references">
+<a href="#section-10.2" class="section-number selfRef">10.2. </a><a href="#name-informative-references" class="section-name selfRef">Informative References</a>
+        </h3>
+<dl class="references">
+<dt id="RFC1034">[RFC1034]</dt>
+        <dd>
+<span class="refAuthor">Mockapetris, P.</span>, <span class="refTitle">"Domain names - concepts and facilities"</span>, <span class="seriesInfo">STD 13</span>, <span class="seriesInfo">RFC 1034</span>, <span class="seriesInfo">DOI 10.17487/RFC1034</span>, <time datetime="1987-11" class="refDate">November 1987</time>, <span>&lt;<a href="https://www.rfc-editor.org/rfc/rfc1034">https://www.rfc-editor.org/rfc/rfc1034</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC6146">[RFC6146]</dt>
+        <dd>
+<span class="refAuthor">Bagnulo, M.</span>, <span class="refAuthor">Matthews, P.</span>, and <span class="refAuthor">I. van Beijnum</span>, <span class="refTitle">"Stateful NAT64: Network Address and Protocol Translation from IPv6 Clients to IPv4 Servers"</span>, <span class="seriesInfo">RFC 6146</span>, <span class="seriesInfo">DOI 10.17487/RFC6146</span>, <time datetime="2011-04" class="refDate">April 2011</time>, <span>&lt;<a href="https://www.rfc-editor.org/rfc/rfc6146">https://www.rfc-editor.org/rfc/rfc6146</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC6147">[RFC6147]</dt>
+        <dd>
+<span class="refAuthor">Bagnulo, M.</span>, <span class="refAuthor">Sullivan, A.</span>, <span class="refAuthor">Matthews, P.</span>, and <span class="refAuthor">I. van Beijnum</span>, <span class="refTitle">"DNS64: DNS Extensions for Network Address Translation from IPv6 Clients to IPv4 Servers"</span>, <span class="seriesInfo">RFC 6147</span>, <span class="seriesInfo">DOI 10.17487/RFC6147</span>, <time datetime="2011-04" class="refDate">April 2011</time>, <span>&lt;<a href="https://www.rfc-editor.org/rfc/rfc6147">https://www.rfc-editor.org/rfc/rfc6147</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC6672">[RFC6672]</dt>
+        <dd>
+<span class="refAuthor">Rose, S.</span> and <span class="refAuthor">W. Wijngaards</span>, <span class="refTitle">"DNAME Redirection in the DNS"</span>, <span class="seriesInfo">RFC 6672</span>, <span class="seriesInfo">DOI 10.17487/RFC6672</span>, <time datetime="2012-06" class="refDate">June 2012</time>, <span>&lt;<a href="https://www.rfc-editor.org/rfc/rfc6672">https://www.rfc-editor.org/rfc/rfc6672</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC6973">[RFC6973]</dt>
+        <dd>
+<span class="refAuthor">Cooper, A.</span>, <span class="refAuthor">Tschofenig, H.</span>, <span class="refAuthor">Aboba, B.</span>, <span class="refAuthor">Peterson, J.</span>, <span class="refAuthor">Morris, J.</span>, <span class="refAuthor">Hansen, M.</span>, and <span class="refAuthor">R. Smith</span>, <span class="refTitle">"Privacy Considerations for Internet Protocols"</span>, <span class="seriesInfo">RFC 6973</span>, <span class="seriesInfo">DOI 10.17487/RFC6973</span>, <time datetime="2013-07" class="refDate">July 2013</time>, <span>&lt;<a href="https://www.rfc-editor.org/rfc/rfc6973">https://www.rfc-editor.org/rfc/rfc6973</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC7050">[RFC7050]</dt>
+        <dd>
+<span class="refAuthor">Savolainen, T.</span>, <span class="refAuthor">Korhonen, J.</span>, and <span class="refAuthor">D. Wing</span>, <span class="refTitle">"Discovery of the IPv6 Prefix Used for IPv6 Address Synthesis"</span>, <span class="seriesInfo">RFC 7050</span>, <span class="seriesInfo">DOI 10.17487/RFC7050</span>, <time datetime="2013-11" class="refDate">November 2013</time>, <span>&lt;<a href="https://www.rfc-editor.org/rfc/rfc7050">https://www.rfc-editor.org/rfc/rfc7050</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC7858">[RFC7858]</dt>
+        <dd>
+<span class="refAuthor">Hu, Z.</span>, <span class="refAuthor">Zhu, L.</span>, <span class="refAuthor">Heidemann, J.</span>, <span class="refAuthor">Mankin, A.</span>, <span class="refAuthor">Wessels, D.</span>, and <span class="refAuthor">P. Hoffman</span>, <span class="refTitle">"Specification for DNS over Transport Layer Security (TLS)"</span>, <span class="seriesInfo">RFC 7858</span>, <span class="seriesInfo">DOI 10.17487/RFC7858</span>, <time datetime="2016-05" class="refDate">May 2016</time>, <span>&lt;<a href="https://www.rfc-editor.org/rfc/rfc7858">https://www.rfc-editor.org/rfc/rfc7858</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC7871">[RFC7871]</dt>
+        <dd>
+<span class="refAuthor">Contavalli, C.</span>, <span class="refAuthor">van der Gaast, W.</span>, <span class="refAuthor">Lawrence, D.</span>, and <span class="refAuthor">W. Kumari</span>, <span class="refTitle">"Client Subnet in DNS Queries"</span>, <span class="seriesInfo">RFC 7871</span>, <span class="seriesInfo">DOI 10.17487/RFC7871</span>, <time datetime="2016-05" class="refDate">May 2016</time>, <span>&lt;<a href="https://www.rfc-editor.org/rfc/rfc7871">https://www.rfc-editor.org/rfc/rfc7871</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8484">[RFC8484]</dt>
+        <dd>
+<span class="refAuthor">Hoffman, P.</span> and <span class="refAuthor">P. McManus</span>, <span class="refTitle">"DNS Queries over HTTPS (DoH)"</span>, <span class="seriesInfo">RFC 8484</span>, <span class="seriesInfo">DOI 10.17487/RFC8484</span>, <time datetime="2018-10" class="refDate">October 2018</time>, <span>&lt;<a href="https://www.rfc-editor.org/rfc/rfc8484">https://www.rfc-editor.org/rfc/rfc8484</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC8781">[RFC8781]</dt>
+        <dd>
+<span class="refAuthor">Colitti, L.</span> and <span class="refAuthor">J. Linkova</span>, <span class="refTitle">"Discovering PREF64 in Router Advertisements"</span>, <span class="seriesInfo">RFC 8781</span>, <span class="seriesInfo">DOI 10.17487/RFC8781</span>, <time datetime="2020-04" class="refDate">April 2020</time>, <span>&lt;<a href="https://www.rfc-editor.org/rfc/rfc8781">https://www.rfc-editor.org/rfc/rfc8781</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9076">[RFC9076]</dt>
+        <dd>
+<span class="refAuthor">Wicinski, T., Ed.</span>, <span class="refTitle">"DNS Privacy Considerations"</span>, <span class="seriesInfo">RFC 9076</span>, <span class="seriesInfo">DOI 10.17487/RFC9076</span>, <time datetime="2021-07" class="refDate">July 2021</time>, <span>&lt;<a href="https://www.rfc-editor.org/rfc/rfc9076">https://www.rfc-editor.org/rfc/rfc9076</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9110">[RFC9110]</dt>
+        <dd>
+<span class="refAuthor">Fielding, R., Ed.</span>, <span class="refAuthor">Nottingham, M., Ed.</span>, and <span class="refAuthor">J. Reschke, Ed.</span>, <span class="refTitle">"HTTP Semantics"</span>, <span class="seriesInfo">STD 97</span>, <span class="seriesInfo">RFC 9110</span>, <span class="seriesInfo">DOI 10.17487/RFC9110</span>, <time datetime="2022-06" class="refDate">June 2022</time>, <span>&lt;<a href="https://www.rfc-editor.org/rfc/rfc9110">https://www.rfc-editor.org/rfc/rfc9110</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9230">[RFC9230]</dt>
+        <dd>
+<span class="refAuthor">Kinnear, E.</span>, <span class="refAuthor">McManus, P.</span>, <span class="refAuthor">Pauly, T.</span>, <span class="refAuthor">Verma, T.</span>, and <span class="refAuthor">C.A. Wood</span>, <span class="refTitle">"Oblivious DNS over HTTPS"</span>, <span class="seriesInfo">RFC 9230</span>, <span class="seriesInfo">DOI 10.17487/RFC9230</span>, <time datetime="2022-06" class="refDate">June 2022</time>, <span>&lt;<a href="https://www.rfc-editor.org/rfc/rfc9230">https://www.rfc-editor.org/rfc/rfc9230</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+<dt id="RFC9499">[RFC9499]</dt>
+      <dd>
+<span class="refAuthor">Hoffman, P.</span> and <span class="refAuthor">K. Fujiwara</span>, <span class="refTitle">"DNS Terminology"</span>, <span class="seriesInfo">BCP 219</span>, <span class="seriesInfo">RFC 9499</span>, <span class="seriesInfo">DOI 10.17487/RFC9499</span>, <time datetime="2024-03" class="refDate">March 2024</time>, <span>&lt;<a href="https://www.rfc-editor.org/rfc/rfc9499">https://www.rfc-editor.org/rfc/rfc9499</a>&gt;</span>. </dd>
+<dd class="break"></dd>
+</dl>
+</section>
+</div>
+</section>
+</div>
+<div id="acknowledgments">
+<section id="appendix-A">
+      <h2 id="name-acknowledgments">
+<a href="#name-acknowledgments" class="section-name selfRef">Acknowledgments</a>
+      </h2>
+<p id="appendix-A-1">TODO acknowledge.<a href="#appendix-A-1" class="pilcrow">¶</a></p>
+</section>
+</div>
+<div id="authors-addresses">
+<section id="appendix-B">
+      <h2 id="name-authors-addresses">
+<a href="#name-authors-addresses" class="section-name selfRef">Authors' Addresses</a>
+      </h2>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Eric Kinnear</span></div>
+<div dir="auto" class="left"><span class="org">Apple Inc.</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:ekinnear@apple.com" class="email">ekinnear@apple.com</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Nidhi Jaju</span></div>
+<div dir="auto" class="left"><span class="org">Google</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:nidhijaju@google.com" class="email">nidhijaju@google.com</a>
+</div>
+</address>
+<address class="vcard">
+        <div dir="auto" class="left"><span class="fn nameRole">Ian Swett</span></div>
+<div dir="auto" class="left"><span class="org">Google</span></div>
+<div class="email">
+<span>Email:</span>
+<a href="mailto:ianswett@google.com" class="email">ianswett@google.com</a>
+</div>
+</address>
+</section>
+</div>
+<script>const toc = document.getElementById("toc");
+toc.querySelector("h2").addEventListener("click", e => {
+  toc.classList.toggle("active");
+});
+toc.querySelector("nav").addEventListener("click", e => {
+  toc.classList.remove("active");
+});
+</script>
+</body>
+</html>
