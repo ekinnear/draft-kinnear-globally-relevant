@@ -1,0 +1,626 @@
+
+
+
+
+Network Working Group                                         E. Kinnear
+Internet-Draft                                                Apple Inc.
+Intended status: Standards Track                                 N. Jaju
+Expires: 7 January 2027                                         I. Swett
+                                                                  Google
+                                                             6 July 2026
+
+
+                      Globally Relevant HTTPS RRs
+              draft-kinnear-dnsop-globally-relevant-latest
+
+Abstract
+
+   DNS answers for SVCB and HTTPS resource records are typically treated
+   as scoped to the network on which they were obtained.  This requires
+   clients to re-resolve DNS when changing network attachments, adding
+   latency to connection establishment.  This document defines a new
+   SvcParamKey, "globally-relevant", for use in SVCB and HTTPS DNS
+   resource records as defined in [RFC9460].  When present, this boolean
+   flag indicates that the service binding parameters in the record are
+   valid regardless of the client's network attachment point.  Clients
+   that observe this flag can reuse cached SVCB and HTTPS records across
+   network changes, subject to normal TTL expiry.
+
+About This Document
+
+   This note is to be removed before publishing as an RFC.
+
+   The latest revision of this draft can be found at
+   https://ekinnear.github.io/draft-kinnear-globally-relevant/draft-
+   kinnear-dnsop-globally-relevant.html.  Status information for this
+   document may be found at https://datatracker.ietf.org/doc/draft-
+   kinnear-dnsop-globally-relevant/.
+
+   Source for this draft and an issue tracker can be found at
+   https://github.com/ekinnear/draft-kinnear-globally-relevant.
+
+Status of This Memo
+
+   This Internet-Draft is submitted in full conformance with the
+   provisions of BCP 78 and BCP 79.
+
+   Internet-Drafts are working documents of the Internet Engineering
+   Task Force (IETF).  Note that other groups may also distribute
+   working documents as Internet-Drafts.  The list of current Internet-
+   Drafts is at https://datatracker.ietf.org/drafts/current/.
+
+   Internet-Drafts are draft documents valid for a maximum of six months
+   and may be updated, replaced, or obsoleted by other documents at any
+   time.  It is inappropriate to use Internet-Drafts as reference
+   material or to cite them other than as "work in progress."
+
+   This Internet-Draft will expire on 7 January 2027.
+
+Copyright Notice
+
+   Copyright (c) 2026 IETF Trust and the persons identified as the
+   document authors.  All rights reserved.
+
+   This document is subject to BCP 78 and the IETF Trust's Legal
+   Provisions Relating to IETF Documents (https://trustee.ietf.org/
+   license-info) in effect on the date of publication of this document.
+   Please review these documents carefully, as they describe your rights
+   and restrictions with respect to this document.  Code Components
+   extracted from this document must include Revised BSD License text as
+   described in Section 4.e of the Trust Legal Provisions and are
+   provided without warranty as described in the Revised BSD License.
+
+Table of Contents
+
+   1.  Introduction
+   2.  Conventions and Definitions
+   3.  The "globally-relevant" SvcParamKey
+     3.1.  Wire Format
+     3.2.  Presentation Format
+     3.3.  Applicability
+   4.  Client Behavior
+     4.1.  Address Synthesis Across Networks
+   5.  Server Behavior
+   6.  Resolver Behavior
+   7.  Security Considerations
+     7.1.  Incorrect Use
+     7.2.  Network Filtering
+     7.3.  DNSSEC Considerations
+     7.4.  Downgrade and Upgrade Attacks
+   8.  Privacy Considerations
+     8.1.  Cross-Network Client Tracking via Unique Addresses
+       8.1.1.  Comparison to Existing Tracking Vectors
+       8.1.2.  Client Mitigations
+   9.  IANA Considerations
+   10. References
+     10.1.  Normative References
+     10.2.  Informative References
+   Acknowledgments
+   Authors' Addresses
+
+1.  Introduction
+
+   When a client changes its network attachment, for example, by
+   switching from one Wi-Fi network to another, transitioning between
+   Wi-Fi and cellular connectivity, or connecting or disconnecting a
+   VPN, current practice requires it to re-resolve DNS records for
+   connections on the new network attachment.  This is because DNS
+   answers may be network-specific due to split-horizon DNS deployments,
+   geographic load balancing, or network-level content policies.  The
+   re-resolution adds latency to connection establishment after every
+   network transition, delaying the user experience.
+
+   Many widely-used services, however, serve DNS answers that are
+   identical regardless of which network the query traverses.  Their
+   HTTPS and SVCB resource records, including ALPN protocol identifiers,
+   Encrypted ClientHello (ECH) configurations, port numbers, and address
+   hints, are globally consistent.  For these services, re-resolving DNS
+   after a network change is unnecessary overhead that delays connection
+   establishment without providing any benefit.
+
+   This document defines a new SvcParamKey called "globally-relevant"
+   for SVCB and HTTPS resource records [RFC9460].  It is a boolean flag
+   with an empty value that authoritative DNS servers set to indicate
+   the record's service binding parameters are valid regardless of
+   network context.  Clients observing this flag MAY continue using
+   cached SVCB and HTTPS records after network transitions, avoiding the
+   latency of re-resolution.
+
+   This mechanism is strictly opt-in.  Services that do not include the
+   "globally-relevant" SvcParamKey continue with current behavior, and
+   their records are treated as network-scoped as they are today.
+
+2.  Conventions and Definitions
+
+   The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
+   "SHOULD", "SHOULD NOT", "RECOMMENDED", "NOT RECOMMENDED", "MAY", and
+   "OPTIONAL" in this document are to be interpreted as described in
+   BCP 14 [RFC2119] [RFC8174] when, and only when, they appear in all
+   capitals, as shown here.
+
+   The following terms are used in this document:
+
+   Network attachment change:  A change in the client's network
+      connectivity, such as switching from one Wi-Fi network to another,
+      transitioning between Wi-Fi and cellular connectivity, or
+      connecting or disconnecting a VPN.
+
+   Authoritative server:  A DNS server that is authoritative for a zone
+      and generates responses for names in that zone, as defined in
+      [RFC9499].
+
+   Recursive resolver:  A DNS resolver that resolves queries on behalf
+      of a client by iteratively querying authoritative servers, as
+      defined in [RFC9499].
+
+   Origin server:  The server that terminates the client's transport
+      connection to the service identified by an SVCB or HTTPS resource
+      record.  For HTTP-based services, this is the origin server as
+      defined in Section 3.6 of [RFC9110].  The ipv4hint and ipv6hint
+      parameters of an SVCB or HTTPS record are hints for reaching this
+      server.
+
+   Operator:  In this document, an entity that runs both the
+      authoritative server for a service's zone and the origin server
+      for that service.  Where a single operator holds both roles, it
+      can correlate observations between DNS queries and connections.
+
+3.  The "globally-relevant" SvcParamKey
+
+   The "globally-relevant" SvcParamKey is a boolean flag parameter for
+   SVCB and HTTPS resource records [RFC9460].  Its presence indicates
+   that the authoritative DNS server asserts the service binding
+   parameters in this record are valid regardless of the client's
+   network attachment point.
+
+3.1.  Wire Format
+
+   The SvcParamKey number is TBD.  The value MUST be empty (length 0),
+   following the same pattern as "no-default-alpn" (SvcParamKey 2)
+   defined in Section 7.1.2 of [RFC9460].  If a client receives this
+   SvcParamKey with a non-empty value, the client MUST ignore the
+   parameter.
+
+3.2.  Presentation Format
+
+   In DNS zone file presentation format, the key is represented as
+   simply globally-relevant with no value.  For example:
+
+   example.com. 300 IN HTTPS 1 . alpn=h2,h3 globally-relevant
+
+3.3.  Applicability
+
+   This parameter is applicable to both SVCB (RR type 64) and HTTPS (RR
+   type 65) resource records.  It is only meaningful in ServiceMode
+   records (those with SvcPriority greater than 0) that carry service
+   binding parameters.  It has no meaning in AliasMode records.
+
+4.  Client Behavior
+
+   When a client receives an SVCB or HTTPS record containing the
+   "globally-relevant" SvcParamKey, it MAY retain the cached record and
+   continue using its service parameters after a network attachment
+   change.
+
+   The record's TTL still applies.  The "globally-relevant" flag does
+   not extend the record's cache lifetime; it only permits reuse of the
+   cached record across network changes within the remaining TTL window.
+
+   If a client experiences connection failures when using cached
+   parameters after a network change, it SHOULD re-resolve the record
+   regardless of the "globally-relevant" flag.
+
+   Clients MAY choose to ignore the "globally-relevant" flag entirely
+   and always re-resolve on network changes.  This flag is purely
+   permissive and does not mandate any specific client behavior.
+
+   When address hints (ipv4hint, ipv6hint) are present in a record
+   carrying the "globally-relevant" flag, the globally-relevant
+   assertion covers those hints as well.  Clients MAY use the cached
+   address hints on the new network, though they SHOULD prefer fresh
+   address resolution if readily available and MAY choose to re-resolve
+   in parallel with connection attempts to the cached address hints.
+
+4.1.  Address Synthesis Across Networks
+
+   On IPv6-only networks that provide NAT64 connectivity [RFC6146],
+   clients can synthesize IPv6 addresses from IPv4 addresses using the
+   network's NAT64 prefix, discovered via Router Advertisements
+   [RFC8781] or DNS-based mechanisms [RFC7050].  The "globally-relevant"
+   flag asserts that the addresses in ipv4hint and ipv6hint are globally
+   valid as published by the authoritative server; it does not assert
+   the validity of any locally-synthesized addresses derived from those
+   hints.
+
+   If a client has synthesized an IPv6 address from an ipv4hint value
+   using one network's NAT64 prefix, it MUST NOT reuse that synthesized
+   address after moving to a different network.  Instead, the client
+   MUST re-synthesize using the NAT64 prefix of the new network, if
+   available.  The original ipv4hint value itself remains valid and can
+   be used as input to the new synthesis.
+
+5.  Server Behavior
+
+   An authoritative DNS server SHOULD set the "globally-relevant"
+   SvcParamKey only when the service binding parameters in the record
+   are consistent across all resolvers and network paths.  This
+   typically applies to globally-deployed services with uniform
+   configurations.
+
+   Services that employ split-horizon DNS, geo-dependent load balancing,
+   or network-specific configurations MUST NOT set this flag.  The flag
+   asserts that all parameters in the record, including ALPN values, ECH
+   configurations, and port numbers, are globally valid.  If any
+   parameter varies by network context, the flag MUST NOT be set.
+
+   In particular, if the record includes ipv4hint or ipv6hint
+   parameters, the addresses contained in those hints MUST be reachable
+   and correct on all networks, not just the network on which the record
+   was originally resolved.  Servers that use address hints to direct
+   clients to network-specific endpoints (e.g., CDN edge nodes selected
+   by resolver location) MUST NOT set the "globally-relevant" flag
+   unless those address hints are valid globally.
+
+   Operators are strongly suggested to carefully audit their DNS
+   configurations before deploying the "globally-relevant" flag, as
+   incorrect use could cause clients to use inappropriate service
+   parameters after network changes.
+
+6.  Resolver Behavior
+
+   Recursive resolvers MUST pass the "globally-relevant" SvcParamKey
+   through to clients transparently, without modification.
+
+   Resolvers MUST NOT add or remove the "globally-relevant" flag.  The
+   assertion of global relevance is made by the authoritative server for
+   the zone, and resolvers are not in a position to make or override
+   this determination.
+
+   Some resolvers modify DNS responses for operational purposes, such as
+   DNS64 synthesis [RFC6147] or content filtering.  When a resolver
+   synthesizes or rewrites a response, it is effectively acting as the
+   authoritative source for that modified answer.  Such synthesized
+   answers SHOULD NOT carry the "globally-relevant" flag, as the
+   resolver cannot assert that its locally-modified response is valid on
+   other networks.
+
+7.  Security Considerations
+
+7.1.  Incorrect Use
+
+   If an authoritative server incorrectly sets the "globally-relevant"
+   flag on a record whose parameters vary by network, clients may use
+   inappropriate service configurations after a network change.  This
+   could manifest as connection failures or as connections to unintended
+   endpoints if address hints are incorrect for the client's new
+   network.  Operators bear responsibility for ensuring the flag is only
+   set on records with truly globally-consistent parameters.
+
+   Clients MUST NOT reuse cached address hints across network changes
+   for connections that are not authenticated by a security protocol,
+   such as TLS.  This allows clients to reject connections established
+   to an address that responds to incoming packets, but no longer
+   represents the desired host.
+
+7.2.  Network Filtering
+
+   Some networks apply DNS-based content filtering or access control
+   policies.  The "globally-relevant" flag allows clients to skip DNS
+   re-resolution when joining such networks, which means the network's
+   filtered DNS responses would not be applied to cached records.
+   However, this does not meaningfully weaken network-level controls:
+   users can already bypass DNS-level filtering by using alternative
+   resolvers, encrypted DNS, or connecting directly to known IP
+   addresses in some cases.  Networks that require effective traffic
+   control already need to enforce policies at layers beyond DNS, such
+   as IP-level or SNI-based firewalling.  The "globally-relevant" flag
+   does not change this.
+
+7.3.  DNSSEC Considerations
+
+   Where DNSSEC validation is employed, the "globally-relevant" flag
+   does not change validation requirements.  Cached records that were
+   validated remain usable as long as the DNSSEC signatures have not
+   expired.  Clients performing DNSSEC validation MUST NOT reuse a
+   cached record if the DNSSEC signature has expired, even if the
+   record's TTL has not.
+
+7.4.  Downgrade and Upgrade Attacks
+
+   An on-path attacker that can modify DNS responses could strip the
+   "globally-relevant" flag from records, causing clients to re-resolve
+   unnecessarily after network changes.  This degrades performance to
+   current behavior but does not otherwise affect security.
+
+   An on-path attacker could also add the "globally-relevant" flag to a
+   record that the authoritative server did not mark as globally
+   relevant.  The impact of this is limited: the client may reuse a
+   record that would otherwise have been re-resolved, which is only
+   problematic if the record was network-specific, and the resulting
+   connection will fail to authenticate the host.  DNSSEC also protects
+   against both of these modification attacks, when deployed.
+
+8.  Privacy Considerations
+
+8.1.  Cross-Network Client Tracking via Unique Addresses
+
+   The "globally-relevant" flag permits a client to use cached ipv6hint
+   (or ipv4hint) addresses across network attachment changes.  An
+   operator that wishes to track a specific client across networks could
+   exploit this by having its authoritative server return a per-client
+   unique address, for example by encoding a client identifier in some
+   of the bits of an IPv6 address, and then observing the resulting
+   connections at its origin server from multiple networks.  Because the
+   client reuses the cached address after a network change, the operator
+   observes the same unique address connecting to its origin server from
+   a different network and links a single client identity to both
+   networks.
+
+   Without "globally-relevant", the client would re-resolve on the new
+   network, and the authoritative server would issue a fresh unique
+   address for that resolution.  The operator would have no DNS-derived
+   signal linking the resolutions as the same client, and the
+   connections arriving at the origin server would carry different
+   addresses, offering no linkage there either.  The cross-network
+   linkage exists in this design only because the unique address itself
+   acts as a stable identifier that the client carries across networks
+   instead of being replaced at each resolution.
+
+   Section 7.1 of [RFC9076] recognizes a related class of attack in
+   which a user is "re-identified via DNS queries... regardless of the
+   location from which the user makes those queries", based on query-
+   pattern correlation across time.  The cross-network linkage described
+   in this section achieves the same result through a different
+   mechanism: rather than correlating recurring query patterns observed
+   by a passive watcher, an operator actively seeds a chosen identifier
+   into the response returned by its authoritative server and recognizes
+   it when the client connects to the resulting address at the origin
+   server.
+
+8.1.1.  Comparison to Existing Tracking Vectors
+
+8.1.1.1.  Recursive Resolvers and Anonymity Sets
+
+   An authoritative server that returns a per-client unique answer today
+   already observes that answer being requested by a specific recursive
+   resolver.  For clients using a shared public or ISP recursive
+   resolver, the authoritative server sees the recursive resolver's
+   address, and the client is part of an anonymity set composed of that
+   recursive resolver's other users (see Section 6.2 of [RFC9076]).  The
+   set's size depends on the deployment (see Section 3.3 of [RFC6973]
+   for definitions of anonymity sets).
+
+   This "hiding" by the recursive resolver is incomplete where the EDNS
+   Client Subnet (ECS) option [RFC7871] is used.  Section 6.2 of
+   [RFC9076] notes that with ECS, the authoritative name server "sees
+   the original IP address (or prefix, depending on the setup)" rather
+   than only the recursive resolver's address.  An authoritative server
+   returning a per-client unique answer can therefore correlate that
+   answer with the client's subnet on each fresh resolution, providing
+   some cross-network correlation even without the "globally-relevant"
+   flag.
+
+   Without the "globally-relevant" flag, the authoritative server's view
+   is partitioned by recursive resolver: it sees one anonymity set per
+   recursive resolver, and a single client moving between networks that
+   use different recursive resolvers appears as independent observations
+   from disjoint sets.  Caching at each recursive resolver further
+   limits how often the authoritative server is queried at all.
+
+   The "globally-relevant" flag allows the operator to join observations
+   that would otherwise have been separated by recursive resolver
+   boundaries, effectively intersecting the per-recursive-resolver
+   anonymity sets and shrinking the set in which any one client is
+   hidden (see Section 5.2.1 of [RFC6973]).
+
+8.1.1.2.  AliasMode and CNAME Targets
+
+   A similar tracking primitive is already available without the
+   "globally-relevant" flag.  Authoritative servers can return per-
+   client unique CNAME targets, SVCB AliasMode targets (Section 2.4.2 of
+   [RFC9460]), or other names that function as client identifiers.
+
+   However, the "globally-relevant" attack described here is harder to
+   mount than these similar attacks, since a unique IPv4 or IPv6 address
+   used as an ipv4hint or ipv6hint value must actually be routable to
+   the operator's origin server from every network the client uses,
+   whereas a unique CNAME or AliasMode target is merely a label that the
+   client subsequently resolves through its local recursive resolver,
+   ultimately pointing at a shared address that the operator already
+   serves.
+
+   The label-based approach therefore costs the operator only a DNS
+   record per identifier, while the address-based approach costs an IP
+   address per identifier and the routing infrastructure to receive
+   traffic on each.
+
+   An arbitrarily long CNAME (or DNAME-induced CNAME) chain reintroduces
+   the same tracking capability, because the final A or AAAA record in
+   the chain can encode a per-client identifier in either its name or
+   its address, and clients caching across networks would carry the
+   chain's terminal answer with them.  [RFC1034] and [RFC6672] do not
+   normatively limit CNAME chain length, and Section 2.2 of [RFC6672]
+   explicitly notes that "fairly lengthy valid chains" may occur.  SVCB
+   itself requires clients and recursive resolvers to cap AliasMode
+   chains at some implementation-chosen depth (Section 2.4.2 of
+   [RFC9460]), but that cap applies only to SVCB aliases, not to CNAME
+   redirections.  Implementations can bound CNAME chain following for
+   resource reasons, but the limit is not interoperable.
+
+   Defending against attacks using CNAME chains is out-of-scope for this
+   document, but implementations of "globally-relevant" SHOULD generally
+   apply the same cross-network caching policy to all elements of an
+   alias chain consistently, reusing either all records in the chain
+   after a network change or none, to avoid creating partial-reuse
+   states that have privacy properties differing from either endpoint of
+   the chain.
+
+8.1.1.3.  Encrypted DNS and ODoH
+
+   Encrypted transports such as DNS-over-TLS [RFC7858], DNS-over-HTTPS
+   [RFC8484], and Oblivious DNS-over-HTTPS [RFC9230] protect the DNS
+   query against on-path observers but do not prevent an authoritative
+   server from returning a per-client unique answer.  Section 6.1.4.1 of
+   [RFC9076] notes that "use of encrypted transports does not reduce the
+   data available in the recursive resolver".
+
+   ODoH in particular hides the client's IP address from the recursive
+   resolver (the "Target" in Section 4 of [RFC9230]) and the query
+   contents from the proxy, but its threat model treats the
+   authoritative server returning unique records per-client as out of
+   scope.  A Target or any downstream authoritative server "could return
+   a DNS answer corresponding to an entity it controls and then observe
+   the subsequent connection from a Client" (see Section 11 of
+   [RFC9230]).  The "globally-relevant" flag does not change this on a
+   single network, but it does extend the same attack surface across
+   networks, subject to the constraints described above.
+
+8.1.2.  Client Mitigations
+
+   Clients implementing this specification SHOULD apply the following
+   mitigations to limit the cross-network tracking risk:
+
+   *  Treat ipv4hint and ipv6hint values that appear unlikely to be
+      shared with many other clients as candidates for re-resolution
+      after a network change, even when the "globally-relevant" flag is
+      present.  Examples include addresses outside well-known anycast
+      ranges, addresses that appear unique to a single client, and
+      addresses with high entropy in the host bits.
+
+   *  When re-resolving a globally-relevant record on a new network in
+      the background (for example, to refresh before TTL expiry), if the
+      new network blocks or refuses the resolution, stop using the
+      cached record rather than continuing to connect to the previously
+      cached address.  A failed refresh on a network that otherwise
+      resolves DNS is a signal that the cached parameters may not be
+      appropriate for the new network, regardless of the flag.
+
+   *  Apply existing privacy protections for address hints uniformly to
+      globally-relevant records, including the requirement in
+      Section 7.1 that cached address hints not be reused across network
+      changes for connections that are not authenticated by a security
+      protocol such as TLS.
+
+9.  IANA Considerations
+
+   This document requests IANA to register the following entry in the
+   "Service Parameter Keys (SvcParamKeys)" registry [RFC9460]:
+
+    +========+===================+==========+============+===========+
+    | Number | Name              | Meaning  | Change     | Reference |
+    |        |                   |          | Controller |           |
+    +========+===================+==========+============+===========+
+    | TBD    | globally-relevant | Record   | IETF       | (this     |
+    |        |                   | is valid |            | document) |
+    |        |                   | across   |            |           |
+    |        |                   | network  |            |           |
+    |        |                   | changes  |            |           |
+    +--------+-------------------+----------+------------+-----------+
+
+                                 Table 1
+
+10.  References
+
+10.1.  Normative References
+
+   [RFC2119]  Bradner, S., "Key words for use in RFCs to Indicate
+              Requirement Levels", BCP 14, RFC 2119,
+              DOI 10.17487/RFC2119, March 1997,
+              <https://www.rfc-editor.org/rfc/rfc2119>.
+
+   [RFC8174]  Leiba, B., "Ambiguity of Uppercase vs Lowercase in RFC
+              2119 Key Words", BCP 14, RFC 8174, DOI 10.17487/RFC8174,
+              May 2017, <https://www.rfc-editor.org/rfc/rfc8174>.
+
+   [RFC9460]  Schwartz, B., Bishop, M., and E. Nygren, "Service Binding
+              and Parameter Specification via the DNS (SVCB and HTTPS
+              Resource Records)", RFC 9460, DOI 10.17487/RFC9460,
+              November 2023, <https://www.rfc-editor.org/rfc/rfc9460>.
+
+10.2.  Informative References
+
+   [RFC1034]  Mockapetris, P., "Domain names - concepts and facilities",
+              STD 13, RFC 1034, DOI 10.17487/RFC1034, November 1987,
+              <https://www.rfc-editor.org/rfc/rfc1034>.
+
+   [RFC6146]  Bagnulo, M., Matthews, P., and I. van Beijnum, "Stateful
+              NAT64: Network Address and Protocol Translation from IPv6
+              Clients to IPv4 Servers", RFC 6146, DOI 10.17487/RFC6146,
+              April 2011, <https://www.rfc-editor.org/rfc/rfc6146>.
+
+   [RFC6147]  Bagnulo, M., Sullivan, A., Matthews, P., and I. van
+              Beijnum, "DNS64: DNS Extensions for Network Address
+              Translation from IPv6 Clients to IPv4 Servers", RFC 6147,
+              DOI 10.17487/RFC6147, April 2011,
+              <https://www.rfc-editor.org/rfc/rfc6147>.
+
+   [RFC6672]  Rose, S. and W. Wijngaards, "DNAME Redirection in the
+              DNS", RFC 6672, DOI 10.17487/RFC6672, June 2012,
+              <https://www.rfc-editor.org/rfc/rfc6672>.
+
+   [RFC6973]  Cooper, A., Tschofenig, H., Aboba, B., Peterson, J.,
+              Morris, J., Hansen, M., and R. Smith, "Privacy
+              Considerations for Internet Protocols", RFC 6973,
+              DOI 10.17487/RFC6973, July 2013,
+              <https://www.rfc-editor.org/rfc/rfc6973>.
+
+   [RFC7050]  Savolainen, T., Korhonen, J., and D. Wing, "Discovery of
+              the IPv6 Prefix Used for IPv6 Address Synthesis",
+              RFC 7050, DOI 10.17487/RFC7050, November 2013,
+              <https://www.rfc-editor.org/rfc/rfc7050>.
+
+   [RFC7858]  Hu, Z., Zhu, L., Heidemann, J., Mankin, A., Wessels, D.,
+              and P. Hoffman, "Specification for DNS over Transport
+              Layer Security (TLS)", RFC 7858, DOI 10.17487/RFC7858, May
+              2016, <https://www.rfc-editor.org/rfc/rfc7858>.
+
+   [RFC7871]  Contavalli, C., van der Gaast, W., Lawrence, D., and W.
+              Kumari, "Client Subnet in DNS Queries", RFC 7871,
+              DOI 10.17487/RFC7871, May 2016,
+              <https://www.rfc-editor.org/rfc/rfc7871>.
+
+   [RFC8484]  Hoffman, P. and P. McManus, "DNS Queries over HTTPS
+              (DoH)", RFC 8484, DOI 10.17487/RFC8484, October 2018,
+              <https://www.rfc-editor.org/rfc/rfc8484>.
+
+   [RFC8781]  Colitti, L. and J. Linkova, "Discovering PREF64 in Router
+              Advertisements", RFC 8781, DOI 10.17487/RFC8781, April
+              2020, <https://www.rfc-editor.org/rfc/rfc8781>.
+
+   [RFC9076]  Wicinski, T., Ed., "DNS Privacy Considerations", RFC 9076,
+              DOI 10.17487/RFC9076, July 2021,
+              <https://www.rfc-editor.org/rfc/rfc9076>.
+
+   [RFC9110]  Fielding, R., Ed., Nottingham, M., Ed., and J. Reschke,
+              Ed., "HTTP Semantics", STD 97, RFC 9110,
+              DOI 10.17487/RFC9110, June 2022,
+              <https://www.rfc-editor.org/rfc/rfc9110>.
+
+   [RFC9230]  Kinnear, E., McManus, P., Pauly, T., Verma, T., and C.A.
+              Wood, "Oblivious DNS over HTTPS", RFC 9230,
+              DOI 10.17487/RFC9230, June 2022,
+              <https://www.rfc-editor.org/rfc/rfc9230>.
+
+   [RFC9499]  Hoffman, P. and K. Fujiwara, "DNS Terminology", BCP 219,
+              RFC 9499, DOI 10.17487/RFC9499, March 2024,
+              <https://www.rfc-editor.org/rfc/rfc9499>.
+
+Acknowledgments
+
+   TODO acknowledge.
+
+Authors' Addresses
+
+   Eric Kinnear
+   Apple Inc.
+   Email: ekinnear@apple.com
+
+
+   Nidhi Jaju
+   Google
+   Email: nidhijaju@google.com
+
+
+   Ian Swett
+   Google
+   Email: ianswett@google.com
