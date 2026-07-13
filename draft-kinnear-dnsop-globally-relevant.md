@@ -209,16 +209,15 @@ clients to use inappropriate service parameters after network changes.
 
 # Resolver Behavior
 
-Recursive resolvers MUST pass the "globally-relevant" SvcParamKey through
-to clients transparently, without modification.
-
-Resolvers MUST NOT add or remove the "globally-relevant" flag. The assertion
+Recursive resolvers are prohibited from modifying DNS record RDATA. Accordingly,
+recursive resolvers cannot add, modify, or remove the "globally-relevant" flag.
+Such a modification would also be illogical, as the assertion
 of global relevance is made by the authoritative server for the zone, and
 resolvers are not in a position to make or override this determination.
 
-Some resolvers modify DNS responses for operational purposes, such as DNS64
-synthesis {{?RFC6147}} or content filtering. When a resolver synthesizes or
-rewrites a response, it is effectively acting as the authoritative source for
+Some resolvers synthesize DNS responses for operational purposes, such as DNS64
+synthesis {{?RFC6147}}. When a resolver synthesizes a response, it is effectively
+acting as the authoritative source for
 that modified answer. Such synthesized answers SHOULD NOT carry
 the "globally-relevant" flag, as the resolver cannot assert that its
 locally-modified response is valid on other networks.
