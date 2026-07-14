@@ -1,6 +1,6 @@
 {
   "magic": "E!vIA5L86J2I",
-  "timestamp": "2026-07-12T03:24:31.796043+00:00",
+  "timestamp": "2026-07-14T02:50:15.066142+00:00",
   "repo": "ekinnear/draft-kinnear-globally-relevant",
   "labels": [
     {
@@ -50,5 +50,32 @@
     }
   ],
   "issues": [],
-  "pulls": []
+  "pulls": [
+    {
+      "number": 1,
+      "id": "PR_kwDORq9kBc7xJkU5",
+      "title": "Adjust text forbidding resolver modification",
+      "url": "https://github.com/ekinnear/draft-kinnear-globally-relevant/pull/1",
+      "state": "OPEN",
+      "author": "bemasc",
+      "authorAssociation": "NONE",
+      "assignees": [],
+      "labels": [],
+      "body": "The present text could be read to imply that this is a special restriction for this flag (as opposed to a rule about SvcParams or RDATA generally).  It could also be read to suggest that resolvers are permitted to modify DNS records in some cases.  (Even when performing filtering, _modification_ of records is not appropriate or permitted.)",
+      "createdAt": "2026-07-13T15:54:02Z",
+      "updatedAt": "2026-07-13T15:54:02Z",
+      "baseRepository": "ekinnear/draft-kinnear-globally-relevant",
+      "baseRefName": "main",
+      "baseRefOid": "f0b59f9a7d9edaee912031eedbd376817b66365d",
+      "headRepository": "bemasc/draft-kinnear-globally-relevant",
+      "headRefName": "patch-1",
+      "headRefOid": "bafc09eee77e8950309d0c360a6275b2eda31f03",
+      "closedAt": null,
+      "mergedAt": null,
+      "mergedBy": null,
+      "mergeCommit": null,
+      "comments": [],
+      "reviews": []
+    }
+  ]
 }
