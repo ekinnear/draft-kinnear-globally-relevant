@@ -131,7 +131,9 @@ In DNS zone file presentation format, the key is represented as simply
 `globally-relevant` with no value. For example:
 
 ~~~ dns-rr
-example.com. 300 IN HTTPS 1 . alpn=h2,h3 globally-relevant
+example.com. 300 IN HTTPS 1 . (
+    alpn=h2,h3 ipv4hint=192.0.2.1 ipv6hint=2001:db8::1
+    globally-relevant )
 ~~~
 
 ## Applicability
@@ -166,6 +168,10 @@ hints as well. Clients MAY use the cached address hints on the new network,
 though they SHOULD prefer fresh address resolution if readily available and MAY
 choose to re-resolve in parallel with connection attempts to the cached address
 hints.
+
+The flag applies only to the SVCB or HTTPS record that carries it. It does
+not extend to A or AAAA records for the TargetName, which remain subject to
+the client's usual behavior on network changes.
 
 ## Address Synthesis Across Networks
 
@@ -202,6 +208,19 @@ networks, not just the network on which the record was originally resolved.
 Servers that use address hints to direct clients to network-specific
 endpoints (e.g., CDN edge nodes selected by resolver location) MUST NOT set
 the "globally-relevant" flag unless those address hints are valid globally.
+
+Globally relevant address hints let a client connect immediately after a
+network change. Without them, a client still has to resolve A and AAAA
+records on the new network before it can connect, and the flag only allows
+it to avoid waiting for the SVCB or HTTPS query. {{Section 7.3 of RFC9460}}
+says that hints SHOULD NOT be included when most clients use compliant
+recursive resolvers, or when the TargetName is "." (the owner name), because
+they would then add little performance benefit. That rationale does not apply
+to records carrying the "globally-relevant" flag, where the hints are the
+only addresses a client can reuse after a network change. Operators that set
+the flag SHOULD include address hints, subject to the requirement above that
+those addresses be valid on all networks. Anycast addresses commonly meet
+this requirement.
 
 Operators are strongly suggested to carefully audit their DNS configurations
 before deploying the "globally-relevant" flag, as incorrect use could cause
