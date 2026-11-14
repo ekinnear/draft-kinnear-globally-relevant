@@ -121,9 +121,9 @@ are valid regardless of the client's network attachment point.
 ## Wire Format
 
 The SvcParamKey number is TBD. The value MUST be empty (length 0), following the
-same pattern as "no-default-alpn" (SvcParamKey 2) defined in Section 7.1.2 of
-{{RFC9460}}. If a client receives this SvcParamKey with a non-empty value, the
-client MUST ignore the parameter.
+same pattern as "no-default-alpn" (SvcParamKey 2) defined in
+{{Section 7.1.1 of RFC9460}}. If a client receives this SvcParamKey with a
+non-empty value, the client MUST ignore the parameter.
 
 ## Presentation Format
 
